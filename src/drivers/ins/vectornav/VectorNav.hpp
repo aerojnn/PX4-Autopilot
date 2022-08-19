@@ -104,6 +104,8 @@ private:
 	BinaryOutputRegister _bor{};
 
 	BinaryOutputRegister _binary_output_400hz{};
+	BinaryOutputRegister _binary_output_100hz{};
+	BinaryOutputRegister _binary_output_5hz{};
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 

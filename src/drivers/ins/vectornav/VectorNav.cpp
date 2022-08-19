@@ -98,7 +98,8 @@ void VectorNav::asciiOrBinaryAsyncMessageReceived(void *userData, VnUartPacket *
 				      GPSGROUP_NONE,
 				      ATTITUDEGROUP_NONE,
 				      INSGROUP_NONE,
-				      GPSGROUP_NONE)) {
+				      GPSGROUP_NONE)
+		) {
 
 		// vec3f ypr = VnUartPacket_extractVec3f(packet);
 
@@ -211,6 +212,11 @@ int VectorNav::init()
 
 
 
+	// TODO:
+
+
+
+
 	/* For the registers that have more complex configuration options, it is
 	 * convenient to read the current existing register configuration, change
 	 * only the values of interest, and then write the configuration to the
@@ -239,20 +245,68 @@ int VectorNav::init()
 	printf("New Heading Mode: %s\n", strConversions);
 
 	ImuGroup imu_group = (ImuGroup)((int)IMUGROUP_ACCEL | (int)IMUGROUP_ANGULARRATE);
+	// baro, mag, move later
 
+	// 400 Hz
 	BinaryOutputRegister_initialize(
 		&_binary_output_400hz,
 		ASYNCMODE_BOTH,
-		10, // divider
+		1, // divider
 		COMMONGROUP_NONE,
 		TIMEGROUP_NONE,
 		imu_group,
 		GPSGROUP_NONE,
+		ATTITUDEGROUP_VPESTATUS | ATTITUDEGROUP_YAWPITCHROLL,,
+		INSGROUP_INSSTATUS | INSGROUP_POSLLA | INSGROUP_VELNED,
+		GPSGROUP_NONE);
+
+	// 50 Hz (baro, mag)
+	//  AttitudeGroup & InsGroup
+	// InsStatus INSGROUP_INSSTATUS is a bit field ***
+	BinaryOutputRegister_initialize(
+		&_binary_output_50hz,
+		ASYNCMODE_BOTH,
+		8, // divider
+		COMMONGROUP_NONE,
+		TIMEGROUP_NONE,
+		IMUGROUP_NONE,
+		GPSGROUP_NONE,
+		ATTITUDEGROUP_VPESTATUS | ATTITUDEGROUP_YAWPITCHROLL,
+		INSGROUP_INSSTATUS | INSGROUP_POSLLA | INSGROUP_VELNED,
+		GPSGROUP_NONE);
+
+	// 5 Hz GPS
+	// diviser 5 hz (diviser 80)
+	BinaryOutputRegister_initialize(
+		&_binary_output_5hz,
+		ASYNCMODE_BOTH,
+		80, // divider
+		COMMONGROUP_NONE,
+		TIMEGROUP_NONE,
+		IMUGROUP_NONE,
+		GPSGROUP_UTC | GPSGROUP_TOW | GPSGROUP_NUMSATS | GPSGROUP_FIX | GPSGROUP_POSLLA | GPSGROUP_VELNED | GPSGROUP_TIMEU,
 		ATTITUDEGROUP_NONE,
 		INSGROUP_NONE,
 		GPSGROUP_NONE);
 
+
+
+
+
+
+
+
 	if ((error = VnSensor_writeBinaryOutput1(&_vs, &_binary_output_400hz, true)) != E_NONE) {
+		PX4_ERR("Error writing binary output 1 %d", error);
+		return PX4_ERROR;
+	}
+
+	if ((error = VnSensor_writeBinaryOutput2(&_vs, &_binary_output_50hz, true)) != E_NONE) {
+		PX4_ERR("Error writing binary output 1 %d", error);
+		return PX4_ERROR;
+	}
+
+	if ((error = VnSensor_writeBinaryOutput3(&_vs, &_binary_output_5hz, true)) != E_NONE) {
 		PX4_ERR("Error writing binary output 1 %d", error);
 		return PX4_ERROR;
 	}
@@ -268,6 +322,8 @@ void VectorNav::Run()
 	// TODO: shutdown
 
 
+
+	// TODO: cleanup and shutdown
 
 
 
