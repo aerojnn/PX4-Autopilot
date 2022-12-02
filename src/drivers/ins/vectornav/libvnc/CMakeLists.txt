@@ -49,12 +49,13 @@ set(SOURCES
         include/vn/protocol/upack.h
         include/vn/protocol/upackf.h
         include/vn/util.h
-        include/vn/math/vector.h)
+        include/vn/math/vector.h
+)
 
 add_library(libvnc ${SOURCES})
 add_dependencies(libvnc prebuild_targets)
 target_compile_options(libvnc
-    PRIVATE
+PRIVATE
         -Wno-error
         -Wno-double-promotion
         -Wno-pointer-sign

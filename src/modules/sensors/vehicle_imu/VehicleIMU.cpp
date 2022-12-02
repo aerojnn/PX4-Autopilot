@@ -304,7 +304,7 @@ bool VehicleIMU::UpdateAccel()
 				}
 
 			} else {
-				PX4_ERR("%d - accel %" PRIu32 " timestamp error timestamp_sample: %" PRIu64 ", previous timestamp_sample: %" PRIu64,
+				PX4_ERR("%d - accel %" PRIu32 " timestamp_sample error: %" PRIu64 ", prev: %" PRIu64,
 					_instance, accel.device_id, accel.timestamp_sample, _accel_timestamp_sample_last);
 			}
 
@@ -431,10 +431,6 @@ bool VehicleIMU::UpdateGyro()
 						}
 					}
 				}
-
-			} else {
-				PX4_ERR("%d - gyro %" PRIu32 " timestamp error timestamp_sample: %" PRIu64 ", previous timestamp_sample: %" PRIu64,
-					_instance, gyro.device_id, gyro.timestamp_sample, _gyro_timestamp_sample_last);
 			}
 
 			if (gyro.timestamp < gyro.timestamp_sample) {
@@ -444,6 +440,12 @@ bool VehicleIMU::UpdateGyro()
 		}
 
 		_gyro_last_generation = _sensor_gyro_sub.get_last_generation();
+
+		if (gyro.timestamp_sample == _gyro_timestamp_sample_last) {
+			PX4_WARN("%d - gyro %" PRIu32 " duplicate timestamp_sample: %" PRIu64, _instance, gyro.device_id,
+				 gyro.timestamp_sample);
+			return false;
+		}
 
 		const float dt = (gyro.timestamp_sample - _gyro_timestamp_sample_last) * 1e-6f;
 

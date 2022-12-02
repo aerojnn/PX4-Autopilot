@@ -44,9 +44,10 @@
 
 #include "vn/sensors.h"
 
+#include <px4_platform_common/module.h>
+#include <px4_platform_common/module_params.h>
 #include <drivers/drv_hrt.h>
 #include <lib/drivers/accelerometer/PX4Accelerometer.hpp>
-#include <lib/drivers/barometer/PX4Barometer.hpp>
 #include <lib/drivers/gyroscope/PX4Gyroscope.hpp>
 #include <lib/drivers/magnetometer/PX4Magnetometer.hpp>
 #include <lib/perf/perf_counter.h>
@@ -56,6 +57,7 @@
 #include <uORB/Publication.hpp>
 #include <uORB/SubscriptionInterval.hpp>
 #include <uORB/topics/parameter_update.h>
+#include <uORB/topics/sensor_baro.h>
 #include <uORB/topics/sensor_gps.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/vehicle_global_position.h>
@@ -64,15 +66,25 @@
 
 using namespace time_literals;
 
-class VectorNav : public px4::ScheduledWorkItem
+class VectorNav : public ModuleBase<VectorNav>, public ModuleParams, public px4::ScheduledWorkItem
 {
 public:
 	VectorNav(const char *port);
-	virtual ~VectorNav();
+	~VectorNav() override;
+
+	/** @see ModuleBase */
+	static int task_spawn(int argc, char *argv[]);
+
+	/** @see ModuleBase */
+	static int custom_command(int argc, char *argv[]);
+
+	/** @see ModuleBase */
+	static int print_usage(const char *reason = nullptr);
+
+	/** @see ModuleBase::print_status() */
+	int print_status() override;
 
 	int init();
-
-	void print_info();
 
 private:
 
@@ -83,9 +95,6 @@ private:
 
 	void Run() override;
 
-	void start();
-	void stop();
-
 	static void asciiOrBinaryAsyncMessageReceived(void *userData, VnUartPacket *packet, size_t runningIndex);
 
 	char _linebuf[10] {};
@@ -94,6 +103,7 @@ private:
 	static constexpr int kCONVERSIONINTERVAL{9_ms};
 
 	int _fd{-1};
+	bool _initialized{false};
 
 	unsigned int _linebuf_index{0};
 
@@ -104,16 +114,16 @@ private:
 	BinaryOutputRegister _bor{};
 
 	BinaryOutputRegister _binary_output_400hz{};
-	BinaryOutputRegister _binary_output_100hz{};
+	BinaryOutputRegister _binary_output_50hz{};
 	BinaryOutputRegister _binary_output_5hz{};
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 
-	PX4Accelerometer _px4_accel;
-	PX4Gyroscope     _px4_gyro;
-	PX4Magnetometer  _px4_mag;
-	PX4Barometer     _px4_baro;
+	PX4Accelerometer _px4_accel{0};
+	PX4Gyroscope     _px4_gyro{0};
+	PX4Magnetometer  _px4_mag{0};
 
+	uORB::PublicationMulti<sensor_baro_s> _sensor_baro_pub{ORB_ID(sensor_baro)};
 	uORB::PublicationMulti<sensor_gps_s> _sensor_gps_pub{ORB_ID(sensor_gps)};
 
 	perf_counter_t _comms_errors{perf_alloc(PC_COUNT, MODULE_NAME": com_err")};

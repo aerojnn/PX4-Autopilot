@@ -40,8 +40,8 @@ px4_add_module(
 		libvnc/include
 	COMPILE_FLAGS
 		#-Wno-error
+		-O0
 	SRCS
-		vectornav_main.cpp
 		VectorNav.cpp
 		VectorNav.hpp
 	MODULE_CONFIG
