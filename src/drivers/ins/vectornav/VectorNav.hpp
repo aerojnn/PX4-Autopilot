@@ -42,6 +42,10 @@
 #include <inttypes.h>
 #include <termios.h>
 
+extern "C" {
+#include "vn/sensors/searcher.h"
+}
+
 #include "vn/sensors.h"
 
 #include <px4_platform_common/module.h>
@@ -84,18 +88,16 @@ public:
 	/** @see ModuleBase::print_status() */
 	int print_status() override;
 
-	int init();
-
 private:
 
-	void PublishAccel(const hrt_abstime &timestamp_sample, float x, float y, float z);
-	void PublishGyro(const hrt_abstime &timestamp_sample, float x, float y, float z);
-	void PublishMag(const hrt_abstime &timestamp_sample, float x, float y, float z);
-	void PublishBaro(const hrt_abstime &timestamp_sample, float pressure);
+	bool init();
+	bool configure();
 
 	void Run() override;
 
 	static void asciiOrBinaryAsyncMessageReceived(void *userData, VnUartPacket *packet, size_t runningIndex);
+
+	void sensorCallback(VnUartPacket *packet);
 
 	char _linebuf[10] {};
 	char _port[20] {};
@@ -104,6 +106,9 @@ private:
 
 	int _fd{-1};
 	bool _initialized{false};
+
+	bool _connected{false};
+	bool _configured{false};
 
 	unsigned int _linebuf_index{0};
 

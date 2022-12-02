@@ -74,62 +74,58 @@ VectorNav::~VectorNav()
 
 void VectorNav::asciiOrBinaryAsyncMessageReceived(void *userData, VnUartPacket *packet, size_t runningIndex)
 {
+	if (userData && (VnUartPacket_type(packet) == PACKETTYPE_BINARY)) {
+		static_cast<VectorNav *>(userData)->sensorCallback(packet);
+	}
+}
+
+void VectorNav::sensorCallback(VnUartPacket *packet)
+{
 	const hrt_abstime time_now_us = hrt_absolute_time();
 
-	/* First make sure we have a binary packet type we expect since there
-	 * are many types of binary output types that can be configured. */
-	// COMMONGROUP_TIMESTARTUP | COMMONGROUP_YAWPITCHROLL
-	if ((VnUartPacket_type(packet) == PACKETTYPE_BINARY) &&
-	    VnUartPacket_isCompatible(packet,
-				      COMMONGROUP_NONE,
-				      TIMEGROUP_NONE,
-				      (ImuGroup)(IMUGROUP_ACCEL | IMUGROUP_ANGULARRATE),
-				      GPSGROUP_NONE,
-				      ATTITUDEGROUP_NONE,
-				      INSGROUP_NONE,
-				      GPSGROUP_NONE)
-	   ) {
+	BinaryGroupType groups = (BinaryGroupType)VnUartPacket_groups(packet);
+	size_t curGroupFieldIndex = 0;
 
-		// vec3f ypr = VnUartPacket_extractVec3f(packet);
+	if ((groups & BINARYGROUPTYPE_IMU) != 0) {
+		ImuGroup imuGroup = (ImuGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
 
-		// char strConversions[50];
-		// str_vec3f(strConversions, ypr);
-		// PX4_INFO("Binary Async YPR: %s\n", strConversions);
+		float temperature = NAN;
 
-		if (userData) {
-			VectorNav *vn = static_cast<VectorNav *>(userData);
+		if (imuGroup & IMUGROUP_TEMP) {
+			temperature = VnUartPacket_extractFloat(packet);
 
-			BinaryGroupType groups = (BinaryGroupType)VnUartPacket_groups(packet);
-			size_t curGroupFieldIndex = 0;
-
-			if ((groups & BINARYGROUPTYPE_IMU) != 0) {
-				ImuGroup imuGroup = (ImuGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
-
-				if (imuGroup & IMUGROUP_TEMP) {
-					//float temperature = VnUartPacket_extractFloat(packet);
-				}
-
-				if (imuGroup & IMUGROUP_PRES) {
-					float pressure = VnUartPacket_extractFloat(packet);
-					vn->PublishBaro(time_now_us, pressure);
-				}
-
-				if (imuGroup & IMUGROUP_MAG) {
-					vec3f magnetic = VnUartPacket_extractVec3f(packet);
-					vn->PublishMag(time_now_us, magnetic.c[0], magnetic.c[1], magnetic.c[2]);
-				}
-
-				if (imuGroup & IMUGROUP_ACCEL) {
-					vec3f acceleration = VnUartPacket_extractVec3f(packet);
-					vn->PublishAccel(time_now_us, acceleration.c[0], acceleration.c[1], acceleration.c[2]);
-				}
-
-				if (imuGroup & IMUGROUP_ANGULARRATE) {
-					vec3f angularRate = VnUartPacket_extractVec3f(packet);
-					vn->PublishGyro(time_now_us, angularRate.c[0], angularRate.c[1], angularRate.c[2]);
-				}
-			}
+			_px4_accel.set_temperature(temperature);
+			_px4_gyro.set_temperature(temperature);
+			_px4_mag.set_temperature(temperature);
 		}
+
+		if (imuGroup & IMUGROUP_PRES) {
+			float pressure = VnUartPacket_extractFloat(packet);
+
+			sensor_baro_s sensor_baro{};
+			sensor_baro.device_id = 0; // TODO: DRV_INS_DEVTYPE_VN300;
+			sensor_baro.pressure = pressure;
+			sensor_baro.temperature = temperature;
+			sensor_baro.timestamp = hrt_absolute_time();
+
+			_sensor_baro_pub.publish(sensor_baro);
+		}
+
+		if (imuGroup & IMUGROUP_MAG) {
+			vec3f magnetic = VnUartPacket_extractVec3f(packet);
+			_px4_mag.update(time_now_us, magnetic.c[0], magnetic.c[1], magnetic.c[2]);
+		}
+
+		if (imuGroup & IMUGROUP_ACCEL) {
+			vec3f acceleration = VnUartPacket_extractVec3f(packet);
+			_px4_accel.update(time_now_us, acceleration.c[0], acceleration.c[1], acceleration.c[2]);
+		}
+
+		if (imuGroup & IMUGROUP_ANGULARRATE) {
+			vec3f angularRate = VnUartPacket_extractVec3f(packet);
+			_px4_gyro.update(time_now_us, angularRate.c[0], angularRate.c[1], angularRate.c[2]);
+		}
+
 
 		// compositeData->quaternion = VnUartPacket_extractVec4f(packet);
 		// compositeData->velocityEstimatedNed = VnUartPacket_extractVec3f(packet);
@@ -137,79 +133,85 @@ void VectorNav::asciiOrBinaryAsyncMessageReceived(void *userData, VnUartPacket *
 
 		// VnCompositeData_processBinaryPacketGps2Group
 
-
-
-
 	}
 }
 
-void VectorNav::PublishAccel(const hrt_abstime &timestamp_sample, float x, float y, float z)
+bool VectorNav::init()
 {
-	_px4_accel.update(timestamp_sample, x, y, z);
-}
+	// first try default baudrate
+	const uint32_t DEFAULT_BAUDRATE = 115200;
+	const uint32_t DESIRED_BAUDRATE = 921600;
 
-void VectorNav::PublishGyro(const hrt_abstime &timestamp_sample, float x, float y, float z)
-{
-	_px4_gyro.update(timestamp_sample, x, y, z);
-}
-
-void VectorNav::PublishMag(const hrt_abstime &timestamp_sample, float x, float y, float z)
-{
-	_px4_mag.update(timestamp_sample, x, y, z);
-}
-
-void VectorNav::PublishBaro(const hrt_abstime &timestamp_sample, float pressure)
-{
-	sensor_baro_s sensor_baro{};
-	sensor_baro.device_id = 0; // TODO: DRV_INS_DEVTYPE_VN300;
-	sensor_baro.pressure = pressure;
-	sensor_baro.timestamp = hrt_absolute_time();
-
-	_sensor_baro_pub.publish(sensor_baro);
-}
-
-int VectorNav::init()
-{
-	PX4_INFO("VectorNav::init");
-	/* This example walks through using the VectorNav C Library to connect to
-	 * and interact with a VectorNav sensor using the VnSensor structure. */
-
-	/* First determine which COM port your sensor is attached to and update the
-	 * constant below. Also, if you have changed your sensor from the factory
-	 * default baudrate of 115200, you will need to update the baudrate
-	 * constant below as well. */
-	const char SENSOR_PORT[] = "/dev/ttyUSB0"; /* Linux format for virtual (USB) serial port. */
-	/*const char SENSOR_PORT[] = "/dev/tty.usbserial-FTXXXXXX"; */ /* Mac OS X format for virtual (USB) serial port. */
-	const uint32_t SENSOR_BAUDRATE = 115200;
-
-
+	// first try default baudrate, if that fails try all other supported baudrates
 	VnSensor_initialize(&_vs);
 
-	VnError error;
+	if ((VnSensor_connect(&_vs, _port, DEFAULT_BAUDRATE) != E_NONE) || !VnSensor_verifySensorConnectivity(&_vs)) {
 
-	/* Now connect to our sensor. */
-	if ((error = VnSensor_connect(&_vs, SENSOR_PORT, SENSOR_BAUDRATE)) != E_NONE) {
-		PX4_ERR("Error connecting to sensor %d", error);
-		return PX4_ERROR;
+		static constexpr uint32_t BAUDRATES[] {9600, 19200, 38400, 57600, 115200, 128000, 230400, 460800, 921600};
+
+		for (auto &baudrate : BAUDRATES) {
+			VnSensor_initialize(&_vs);
+
+			if (VnSensor_connect(&_vs, _port, baudrate) == E_NONE && VnSensor_verifySensorConnectivity(&_vs)) {
+				PX4_DEBUG("found baudrate %d", baudrate);
+				break;
+			}
+
+			// disconnect before trying again
+			VnSensor_disconnect(&_vs);
+		}
 	}
 
-	/* Let's query the sensor's model number. */
-	char modelNumber[30];
+	VnError error = E_NONE;
 
-	if ((error = VnSensor_readModelNumber(&_vs, modelNumber, sizeof(modelNumber))) != E_NONE) {
+	// change baudrate to max
+	if ((error = VnSensor_changeBaudrate(&_vs, DESIRED_BAUDRATE)) != E_NONE) {
+		PX4_WARN("Error changing baud rate failed: %d", error);
+	}
+
+	// query the sensor's model number
+	char model_number[30] {};
+
+	if ((error = VnSensor_readModelNumber(&_vs, model_number, sizeof(model_number))) != E_NONE) {
 		PX4_ERR("Error reading model number %d", error);
-		return PX4_ERROR;
+		return false;
 	}
 
-	PX4_INFO("Model Number: %s", modelNumber);
+	// query the sensor's hardware revision
+	uint32_t hardware_revision = 0;
 
+	if ((error = VnSensor_readHardwareRevision(&_vs, &hardware_revision)) != E_NONE) {
+		PX4_ERR("Error reading HW revision %d", error);
+		return false;
+	}
 
+	// query the sensor's serial number
+	uint32_t serial_number = 0;
 
+	if ((error = VnSensor_readSerialNumber(&_vs, &serial_number)) != E_NONE) {
+		PX4_ERR("Error reading serial number %d", error);
+		return false;
+	}
 
-	// TODO:
+	// query the sensor's firmware version
+	char firmware_version[30] {};
 
+	if ((error = VnSensor_readFirmwareVersion(&_vs, firmware_version, sizeof(firmware_version))) != E_NONE) {
+		PX4_ERR("Error reading firmware version %d", error);
+		return false;
+	}
 
+	PX4_INFO("Model: %s, HW REV: %d, SN: %d, SW VER: %s", model_number, hardware_revision, serial_number, firmware_version);
 
+	return true;
+}
+
+bool VectorNav::configure()
+{
+	// disable all ASCII messages
+	VnSensor_writeAsyncDataOutputType(&_vs, VNOFF, true);
+
+	VnError error = E_NONE;
 
 	/* For the registers that have more complex configuration options, it is
 	 * convenient to read the current existing register configuration, change
@@ -224,7 +226,7 @@ int VectorNav::init()
 
 	char strConversions[30] {};
 	strFromHeadingMode(strConversions, (VnHeadingMode)vpeReg.headingMode);
-	printf("Old Heading Mode: %s\n", strConversions);
+	PX4_DEBUG("Old Heading Mode: %s\n", strConversions);
 	vpeReg.headingMode = VNHEADINGMODE_ABSOLUTE;
 
 	if ((error = VnSensor_writeVpeBasicControl(&_vs, vpeReg, true)) != E_NONE) {
@@ -236,7 +238,7 @@ int VectorNav::init()
 	}
 
 	strFromHeadingMode(strConversions, (VnHeadingMode)vpeReg.headingMode);
-	printf("New Heading Mode: %s\n", strConversions);
+	PX4_DEBUG("New Heading Mode: %s\n", strConversions);
 
 	ImuGroup imu_group = (ImuGroup)((int)IMUGROUP_ACCEL | (int)IMUGROUP_ANGULARRATE);
 	AttitudeGroup attitude_group = (AttitudeGroup)((int)ATTITUDEGROUP_VPESTATUS | (int)ATTITUDEGROUP_YAWPITCHROLL);
@@ -250,14 +252,14 @@ int VectorNav::init()
 	// 400 Hz
 	BinaryOutputRegister_initialize(
 		&_binary_output_400hz,
-		ASYNCMODE_BOTH,
-		8, // divider
+		ASYNCMODE_PORT1, //ASYNCMODE_BOTH,
+		1, // divider
 		COMMONGROUP_NONE,
 		TIMEGROUP_NONE,
 		imu_group,
 		GPSGROUP_NONE,
-		ATTITUDEGROUP_NONE, // attitude_group,
-		INSGROUP_NONE, //ins_group,
+		attitude_group,
+		ins_group,
 		GPSGROUP_NONE);
 
 	// 50 Hz (baro, mag)
@@ -265,7 +267,7 @@ int VectorNav::init()
 	// InsStatus INSGROUP_INSSTATUS is a bit field ***
 	BinaryOutputRegister_initialize(
 		&_binary_output_50hz,
-		ASYNCMODE_BOTH,
+		ASYNCMODE_PORT1, //ASYNCMODE_BOTH,
 		8, // divider
 		COMMONGROUP_NONE,
 		TIMEGROUP_NONE,
@@ -279,7 +281,7 @@ int VectorNav::init()
 	// diviser 5 hz (diviser 80)
 	BinaryOutputRegister_initialize(
 		&_binary_output_5hz,
-		ASYNCMODE_BOTH,
+		ASYNCMODE_PORT1, //ASYNCMODE_BOTH,
 		80, // divider
 		COMMONGROUP_NONE,
 		TIMEGROUP_NONE,
@@ -295,58 +297,60 @@ int VectorNav::init()
 		// char buffer[128]{};
 		// strFromVnError((char*)buffer, error);
 		// PX4_ERR("Error writing binary output 1: %s", buffer);
-
 		PX4_ERR("Error writing binary output 1 %d", error);
 
-		return PX4_ERROR;
+		return false;
 	}
 
 	if ((error = VnSensor_writeBinaryOutput2(&_vs, &_binary_output_50hz, true)) != E_NONE) {
 		PX4_ERR("Error writing binary output 2 %d", error);
-		return PX4_ERROR;
+		return false;
 	}
 
 	if ((error = VnSensor_writeBinaryOutput3(&_vs, &_binary_output_5hz, true)) != E_NONE) {
 		PX4_ERR("Error writing binary output 3 %d", error);
-		//return PX4_ERROR;
+		//return false;
 	}
 
 	VnSensor_registerAsyncPacketReceivedHandler(&_vs, VectorNav::asciiOrBinaryAsyncMessageReceived, this);
 
-	return PX4_OK;
+	return true;
 }
 
 void VectorNav::Run()
 {
-
-	// TODO: shutdown
-
-
-
-	// TODO: cleanup and shutdown
-
-
-	// fds initialized?
-	if (_fd < 0) {
-		// open fd
-		//_fd = ::open(_port, O_RDWR | O_NOCTTY);
-	}
-
 	if (should_exit()) {
 		VnSensor_disconnect(&_vs);
 		exit_and_cleanup();
 		return;
 
 	} else if (!_initialized) {
-		if (init() == PX4_OK) {
+
+		if (!_connected) {
+			if (init()) {
+				_connected = true;
+			}
+		}
+
+		if (_connected) {
+			if (!_configured) {
+				if (configure()) {
+					_configured = true;
+				}
+			}
+		}
+
+		if (_connected && _configured) {
 			_initialized = true;
 
 		} else {
-			PX4_ERR("init failed");
-			exit_and_cleanup();
+			ScheduleDelayed(3_s);
 			return;
 		}
 	}
+
+
+
 
 	ScheduleDelayed(100_ms);
 }
