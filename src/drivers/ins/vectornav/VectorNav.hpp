@@ -114,9 +114,7 @@ private:
 
 	hrt_abstime _last_read{0};
 
-	/* We first need to initialize our VnSensor structure. */
 	VnSensor _vs{};
-	BinaryOutputRegister _bor{};
 
 	BinaryOutputRegister _binary_output_400hz{};
 	BinaryOutputRegister _binary_output_50hz{};
@@ -134,4 +132,17 @@ private:
 	perf_counter_t _comms_errors{perf_alloc(PC_COUNT, MODULE_NAME": com_err")};
 	perf_counter_t _sample_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": read")};
 
+
+
+	// TODO: params for GNSS antenna offsets
+	// A
+	// B
+
+// As mentioned previously, the VN-300 has a factory default baseline of {1, 0, 0} [m]. This vector represents
+// the position of a point on GNSS antenna B relative to the same point on GNSS antenna A in the output
+// coordinate system on the VN-300. The default output coordinate system is engraved on the top of the
+// aluminum enclosure. For the factory default case, GNSS antenna B should be positioned in front of GNSS
+// antenna A relative to the X-axis marked on the VN-300 enclosure as shown in the figure below. If a different
+// baseline length or direction required, then you will need to write the new baseline vector and the measurement
+// uncertainty to the sensor using the GNSS Compass Baseline Register.
 };

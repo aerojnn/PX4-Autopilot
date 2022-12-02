@@ -68,13 +68,25 @@ VectorNav::VectorNav(const char *port) :
 
 VectorNav::~VectorNav()
 {
+	VnSensor_unregisterAsyncPacketReceivedHandler(&_vs);
+	VnSensor_disconnect(&_vs);
+
 	perf_free(_sample_perf);
 	perf_free(_comms_errors);
 }
 
 void VectorNav::asciiOrBinaryAsyncMessageReceived(void *userData, VnUartPacket *packet, size_t runningIndex)
 {
-	if (userData && (VnUartPacket_type(packet) == PACKETTYPE_BINARY)) {
+	if (VnUartPacket_isError(packet)) {
+		uint8_t error = 0;
+		VnUartPacket_parseError(packet, &error);
+
+		char buffer[128] {};
+		strFromSensorError(buffer, (SensorError)error);
+
+		PX4_ERR("%s", buffer);
+
+	} else if (userData && (VnUartPacket_type(packet) == PACKETTYPE_BINARY)) {
 		static_cast<VectorNav *>(userData)->sensorCallback(packet);
 	}
 }
@@ -84,23 +96,34 @@ void VectorNav::sensorCallback(VnUartPacket *packet)
 	const hrt_abstime time_now_us = hrt_absolute_time();
 
 	BinaryGroupType groups = (BinaryGroupType)VnUartPacket_groups(packet);
+
 	size_t curGroupFieldIndex = 0;
 
-	if ((groups & BINARYGROUPTYPE_IMU) != 0) {
-		ImuGroup imuGroup = (ImuGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
+	// Output Group 1 Common Group
+	if (groups & BINARYGROUPTYPE_COMMON) {
 
-		float temperature = NAN;
+	}
 
-		if (imuGroup & IMUGROUP_TEMP) {
-			temperature = VnUartPacket_extractFloat(packet);
+	// Output Group 2 Time Group
+	if (groups & BINARYGROUPTYPE_TIME) {
 
-			_px4_accel.set_temperature(temperature);
-			_px4_gyro.set_temperature(temperature);
-			_px4_mag.set_temperature(temperature);
+	}
+
+	// Output Group 3 IMU Group
+	if (groups & BINARYGROUPTYPE_IMU) {
+
+		ImuGroup group_field = (ImuGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
+
+		// 0: ImuStatus
+		if (group_field & IMUGROUP_IMUSTATUS) {
+
 		}
 
-		if (imuGroup & IMUGROUP_PRES) {
-			float pressure = VnUartPacket_extractFloat(packet);
+		// 4: Temp, 5: Pres
+		if ((group_field & IMUGROUP_PRES) && (group_field & IMUGROUP_TEMP)) {
+
+			const float temperature = VnUartPacket_extractFloat(packet);
+			const float pressure = VnUartPacket_extractFloat(packet);
 
 			sensor_baro_s sensor_baro{};
 			sensor_baro.device_id = 0; // TODO: DRV_INS_DEVTYPE_VN300;
@@ -109,29 +132,71 @@ void VectorNav::sensorCallback(VnUartPacket *packet)
 			sensor_baro.timestamp = hrt_absolute_time();
 
 			_sensor_baro_pub.publish(sensor_baro);
+
+			// update all temperatures
+			_px4_accel.set_temperature(temperature);
+			_px4_gyro.set_temperature(temperature);
+			_px4_mag.set_temperature(temperature);
 		}
 
-		if (imuGroup & IMUGROUP_MAG) {
+		// 8: Mag
+		if (group_field & IMUGROUP_MAG) {
 			vec3f magnetic = VnUartPacket_extractVec3f(packet);
 			_px4_mag.update(time_now_us, magnetic.c[0], magnetic.c[1], magnetic.c[2]);
 		}
 
-		if (imuGroup & IMUGROUP_ACCEL) {
+		// 9: Accel
+		if (group_field & IMUGROUP_ACCEL) {
 			vec3f acceleration = VnUartPacket_extractVec3f(packet);
 			_px4_accel.update(time_now_us, acceleration.c[0], acceleration.c[1], acceleration.c[2]);
 		}
 
-		if (imuGroup & IMUGROUP_ANGULARRATE) {
+		// 10: AngularRate
+		if (group_field & IMUGROUP_ANGULARRATE) {
 			vec3f angularRate = VnUartPacket_extractVec3f(packet);
 			_px4_gyro.update(time_now_us, angularRate.c[0], angularRate.c[1], angularRate.c[2]);
 		}
+	}
+
+	// Output Group 4 GNSS1 Group
+	if (groups & BINARYGROUPTYPE_GPS) {
+
+		GpsGroup group = (GpsGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
+
+		if (group & IMUGROUP_TEMP) {
 
 
-		// compositeData->quaternion = VnUartPacket_extractVec4f(packet);
-		// compositeData->velocityEstimatedNed = VnUartPacket_extractVec3f(packet);
+		}
+	}
+
+	// Output Group 5 Attitude Group
+	if (groups & BINARYGROUPTYPE_ATTITUDE) {
+
+		AttitudeGroup group = (AttitudeGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
+
+		if (group & ATTITUDEGROUP_QUATERNION) {
+
+		}
+
+		//vehicle_attitude_s attitude{};
+
+		// attitude.timestamp = hrt_absolute_time();
+		//_attitude_pub.publish(attitude);
+	}
+
+	// Output Group 6 INS Group
+	if (groups & BINARYGROUPTYPE_INS) {
+
+		InsGroup group = (InsGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
 
 
-		// VnCompositeData_processBinaryPacketGps2Group
+		if (group & INSGROUP_INSSTATUS) {
+
+		}
+	}
+
+	// Output Group 7 GNSS2 Group
+	if (groups & BINARYGROUPTYPE_GPS2) {
 
 	}
 }
@@ -218,31 +283,36 @@ bool VectorNav::configure()
 	 * only the values of interest, and then write the configuration to the
 	 * register. This allows preserving the current settings for the register's
 	 * other fields. Below, we change the heading mode used by the sensor. */
-	VpeBasicControlRegister vpeReg;
+	VpeBasicControlRegister vpeReg{};
 
-	if ((error = VnSensor_readVpeBasicControl(&_vs, &vpeReg)) != E_NONE) {
+	if (VnSensor_readVpeBasicControl(&_vs, &vpeReg) == E_NONE) {
+
+		char strConversions[30] {};
+		strFromHeadingMode(strConversions, (VnHeadingMode)vpeReg.headingMode);
+		PX4_DEBUG("Old Heading Mode: %s\n", strConversions);
+
+		vpeReg.headingMode = VNHEADINGMODE_ABSOLUTE;
+
+		if (VnSensor_writeVpeBasicControl(&_vs, vpeReg, true) == E_NONE) {
+
+			if (VnSensor_readVpeBasicControl(&_vs, &vpeReg) == E_NONE) {
+				strFromHeadingMode(strConversions, (VnHeadingMode)vpeReg.headingMode);
+				PX4_DEBUG("New Heading Mode: %s\n", strConversions);
+			}
+
+		} else {
+			PX4_ERR("Error writing VPE basic control");
+		}
+
+	} else {
 		PX4_ERR("Error reading VPE basic control %d", error);
 	}
 
-	char strConversions[30] {};
-	strFromHeadingMode(strConversions, (VnHeadingMode)vpeReg.headingMode);
-	PX4_DEBUG("Old Heading Mode: %s\n", strConversions);
-	vpeReg.headingMode = VNHEADINGMODE_ABSOLUTE;
 
-	if ((error = VnSensor_writeVpeBasicControl(&_vs, vpeReg, true)) != E_NONE) {
-		PX4_WARN("Error writing VPE basic control %d", error);
-	}
 
-	if ((error = VnSensor_readVpeBasicControl(&_vs, &vpeReg)) != E_NONE) {
-		PX4_WARN("Error reading VPE basic control %d", error);
-	}
-
-	strFromHeadingMode(strConversions, (VnHeadingMode)vpeReg.headingMode);
-	PX4_DEBUG("New Heading Mode: %s\n", strConversions);
-
-	ImuGroup imu_group = (ImuGroup)((int)IMUGROUP_ACCEL | (int)IMUGROUP_ANGULARRATE);
-	AttitudeGroup attitude_group = (AttitudeGroup)((int)ATTITUDEGROUP_VPESTATUS | (int)ATTITUDEGROUP_YAWPITCHROLL);
-	InsGroup ins_group = (InsGroup)((int)INSGROUP_INSSTATUS | (int)INSGROUP_POSLLA | (int)INSGROUP_VELNED);
+	ImuGroup imu_group = (ImuGroup)(IMUGROUP_ACCEL | IMUGROUP_ANGULARRATE);
+	AttitudeGroup attitude_group = (AttitudeGroup)(ATTITUDEGROUP_VPESTATUS | ATTITUDEGROUP_YAWPITCHROLL);
+	InsGroup ins_group = (InsGroup)(INSGROUP_INSSTATUS | INSGROUP_POSLLA | INSGROUP_VELNED);
 	GpsGroup gps_group = (GpsGroup)(GPSGROUP_UTC | GPSGROUP_TOW | GPSGROUP_NUMSATS | GPSGROUP_FIX | GPSGROUP_POSLLA |
 					GPSGROUP_VELNED | GPSGROUP_TIMEU);
 
@@ -252,7 +322,7 @@ bool VectorNav::configure()
 	// 400 Hz
 	BinaryOutputRegister_initialize(
 		&_binary_output_400hz,
-		ASYNCMODE_PORT1, //ASYNCMODE_BOTH,
+		ASYNCMODE_PORT1,
 		1, // divider
 		COMMONGROUP_NONE,
 		TIMEGROUP_NONE,
@@ -260,14 +330,15 @@ bool VectorNav::configure()
 		GPSGROUP_NONE,
 		attitude_group,
 		ins_group,
-		GPSGROUP_NONE);
+		GPSGROUP_NONE
+	);
 
 	// 50 Hz (baro, mag)
 	//  AttitudeGroup & InsGroup
 	// InsStatus INSGROUP_INSSTATUS is a bit field ***
 	BinaryOutputRegister_initialize(
 		&_binary_output_50hz,
-		ASYNCMODE_PORT1, //ASYNCMODE_BOTH,
+		ASYNCMODE_PORT1,
 		8, // divider
 		COMMONGROUP_NONE,
 		TIMEGROUP_NONE,
@@ -275,21 +346,23 @@ bool VectorNav::configure()
 		GPSGROUP_NONE,
 		attitude_group,
 		ins_group,
-		GPSGROUP_NONE);
+		GPSGROUP_NONE
+	);
 
 	// 5 Hz GPS
 	// diviser 5 hz (diviser 80)
 	BinaryOutputRegister_initialize(
 		&_binary_output_5hz,
-		ASYNCMODE_PORT1, //ASYNCMODE_BOTH,
+		ASYNCMODE_PORT1,
 		80, // divider
 		COMMONGROUP_NONE,
 		TIMEGROUP_NONE,
-		IMUGROUP_NONE,
+		IMUGROUP_TEMP,
 		gps_group,
 		ATTITUDEGROUP_NONE,
 		INSGROUP_NONE,
-		GPSGROUP_NONE);
+		GPSGROUP_NONE
+	);
 
 
 	if ((error = VnSensor_writeBinaryOutput1(&_vs, &_binary_output_400hz, true)) != E_NONE) {
@@ -314,12 +387,17 @@ bool VectorNav::configure()
 
 	VnSensor_registerAsyncPacketReceivedHandler(&_vs, VectorNav::asciiOrBinaryAsyncMessageReceived, this);
 
+
+	// TODO:
+	// VnSensor_registerErrorPacketReceivedHandler
+
 	return true;
 }
 
 void VectorNav::Run()
 {
 	if (should_exit()) {
+		VnSensor_unregisterAsyncPacketReceivedHandler(&_vs);
 		VnSensor_disconnect(&_vs);
 		exit_and_cleanup();
 		return;
