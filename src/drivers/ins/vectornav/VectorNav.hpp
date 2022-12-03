@@ -44,6 +44,8 @@
 
 extern "C" {
 #include "vn/sensors/searcher.h"
+
+#include "vn/sensors/compositedata.h"
 }
 
 #include "vn/sensors.h"
@@ -128,6 +130,10 @@ private:
 
 	uORB::PublicationMulti<sensor_baro_s> _sensor_baro_pub{ORB_ID(sensor_baro)};
 	uORB::PublicationMulti<sensor_gps_s> _sensor_gps_pub{ORB_ID(sensor_gps)};
+
+	uORB::PublicationMulti<vehicle_attitude_s> _attitude_pub{ORB_ID(external_ins_attitude)};
+	uORB::PublicationMulti<vehicle_local_position_s> _local_position_pub{ORB_ID(external_ins_local_position)};
+	uORB::PublicationMulti<vehicle_global_position_s> _global_position_pub{ORB_ID(external_ins_global_position)};
 
 	perf_counter_t _comms_errors{perf_alloc(PC_COUNT, MODULE_NAME": com_err")};
 	perf_counter_t _sample_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": read")};

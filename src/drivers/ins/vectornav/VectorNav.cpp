@@ -158,25 +158,167 @@ void VectorNav::sensorCallback(VnUartPacket *packet)
 		}
 	}
 
+	// TODO: temporary
+	VnCompositeData cd{};
+	VnCompositeData *compositeData = &cd;
+
 	// Output Group 4 GNSS1 Group
 	if (groups & BINARYGROUPTYPE_GPS) {
 
-		GpsGroup group = (GpsGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
+		GpsGroup group_field = (GpsGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
 
-		if (group & IMUGROUP_TEMP) {
+		sensor_gps_s sensor_gps{};
 
+		// 0: UTC
+		if (group_field & GPSGROUP_UTC) {
+
+			sensor_gps.time_utc_usec = VnUartPacket_extractUint64(packet);
 
 		}
+
+		if (group_field & GPSGROUP_UTC) {
+			compositeData->timeUtc.year = VnUartPacket_extractInt8(packet);
+			compositeData->timeUtc.month = VnUartPacket_extractUint8(packet);
+			compositeData->timeUtc.day = VnUartPacket_extractUint8(packet);
+			compositeData->timeUtc.hour = VnUartPacket_extractUint8(packet);
+			compositeData->timeUtc.min = VnUartPacket_extractUint8(packet);
+			compositeData->timeUtc.sec = VnUartPacket_extractUint8(packet);
+			compositeData->timeUtc.ms = VnUartPacket_extractUint16(packet);
+		}
+
+		if (group_field & GPSGROUP_TOW) {
+			compositeData->gpsTow = VnUartPacket_extractUint64(packet);
+		}
+
+		if (group_field & GPSGROUP_WEEK) {
+			compositeData->week = VnUartPacket_extractUint16(packet);
+		}
+
+		if (group_field & GPSGROUP_NUMSATS) {
+			compositeData->numSats = VnUartPacket_extractUint8(packet);
+		}
+
+		if (group_field & GPSGROUP_FIX) {
+			compositeData->gpsFix = VnUartPacket_extractUint8(packet);
+		}
+
+		if (group_field & GPSGROUP_POSLLA) {
+			compositeData->positionGpsLla = VnUartPacket_extractVec3d(packet);
+		}
+
+		if (group_field & GPSGROUP_POSECEF) {
+			compositeData->positionGpsEcef = VnUartPacket_extractVec3d(packet);
+		}
+
+		if (group_field & GPSGROUP_VELNED) {
+			compositeData->velocityGpsNed = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & GPSGROUP_VELECEF) {
+			compositeData->velocityGpsEcef = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & GPSGROUP_POSU) {
+			compositeData->positionUncertaintyGpsNed = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & GPSGROUP_VELU) {
+			compositeData->velocityUncertaintyGps = VnUartPacket_extractFloat(packet);
+		}
+
+		if (group_field & GPSGROUP_TIMEU) {
+			compositeData->timeUncertainty = VnUartPacket_extractUint32(packet);
+		}
+
+		if (group_field & GPSGROUP_TIMEINFO) {
+			compositeData->timeInfo = VnUartPacket_extractTimeInfo(packet);
+		}
+
+		if (group_field & GPSGROUP_DOP) {
+			compositeData->dop = VnUartPacket_extractGpsDop(packet);
+		}
+
+
+
+
+		sensor_gps.timestamp = hrt_absolute_time();
+
+		_sensor_gps_pub.publish(sensor_gps);
 	}
 
 	// Output Group 5 Attitude Group
 	if (groups & BINARYGROUPTYPE_ATTITUDE) {
 
-		AttitudeGroup group = (AttitudeGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
+		AttitudeGroup group_field = (AttitudeGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
 
-		if (group & ATTITUDEGROUP_QUATERNION) {
+		if (group_field & ATTITUDEGROUP_QUATERNION) {
 
 		}
+
+		if (group_field & ATTITUDEGROUP_VPESTATUS) {
+			compositeData->vpeStatus = VnUartPacket_extractUint16(packet);
+		}
+
+		if (group_field & ATTITUDEGROUP_YAWPITCHROLL) {
+			compositeData->yawPitchRoll = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & ATTITUDEGROUP_QUATERNION) {
+			compositeData->quaternion = VnUartPacket_extractVec4f(packet);
+		}
+
+		if (group_field & ATTITUDEGROUP_DCM) {
+			compositeData->directionCosineMatrix = VnUartPacket_extractMat3f(packet);
+		}
+
+		if (group_field & ATTITUDEGROUP_MAGNED) {
+			compositeData->magneticNed = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & ATTITUDEGROUP_ACCELNED) {
+			compositeData->accelerationNed = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & ATTITUDEGROUP_LINEARACCELBODY) {
+			compositeData->accelerationLinearBody = VnUartPacket_extractVec3f(packet);
+			compositeData->velocityType = CDVEL_EstimatedBody;
+		}
+
+		if (group_field & ATTITUDEGROUP_LINEARACCELNED) {
+			compositeData->accelerationLinearNed = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & ATTITUDEGROUP_YPRU) {
+			compositeData->attitudeUncertainty = VnUartPacket_extractVec3f(packet);
+		}
+
+#ifdef EXTRA
+
+		if (group_field & ATTITUDEGROUP_YPRRATE) {
+			compositeData->yprRates = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & ATTITUDEGROUP_STATEAHRS) {
+			/* Currently not doing anything with these values. */
+			size_t i;
+
+			for (i = 0; i < 7; i++) {
+				VnUartPacket_extractFloat(packet);
+			}
+		}
+
+		if (group_field & ATTITUDEGROUP_COVAHRS) {
+			/* Currently not doing anything with these values. */
+			size_t i;
+
+			for (i = 0; i < 6; i++) {
+				VnUartPacket_extractFloat(packet);
+			}
+		}
+
+#endif
+
+
 
 		//vehicle_attitude_s attitude{};
 
@@ -187,16 +329,148 @@ void VectorNav::sensorCallback(VnUartPacket *packet)
 	// Output Group 6 INS Group
 	if (groups & BINARYGROUPTYPE_INS) {
 
-		InsGroup group = (InsGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
+		InsGroup group_field = (InsGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
 
+		vehicle_attitude_s attitude{};
+		vehicle_local_position_s local_position{};
+		vehicle_global_position_s global_position{};
 
-		if (group & INSGROUP_INSSTATUS) {
+		if (group_field & INSGROUP_INSSTATUS) {
+			compositeData->insStatus = VnUartPacket_extractUint16(packet);
+			// Mode
 
+			// GNSSFix
+
+			// Error
+
+			//
 		}
+
+		if (group_field & INSGROUP_POSLLA) {
+			compositeData->positionEstimatedLla = VnUartPacket_extractVec3d(packet);
+		}
+
+		if (group_field & INSGROUP_POSECEF) {
+			compositeData->positionEstimatedEcef = VnUartPacket_extractVec3d(packet);
+		}
+
+		if (group_field & INSGROUP_VELBODY) {
+			compositeData->velocityEstimatedBody = VnUartPacket_extractVec3f(packet);
+			compositeData->velocityType = CDVEL_EstimatedNed;
+		}
+
+		if (group_field & INSGROUP_VELNED) {
+			compositeData->velocityEstimatedNed = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & INSGROUP_VELECEF) {
+			compositeData->velocityEstimatedEcef = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & INSGROUP_MAGECEF) {
+			compositeData->magneticEcef = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & INSGROUP_ACCELECEF) {
+			compositeData->accelerationEcef = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & INSGROUP_LINEARACCELECEF) {
+			compositeData->accelerationLinearEcef = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & INSGROUP_POSU) {
+			compositeData->positionUncertaintyEstimated = VnUartPacket_extractFloat(packet);
+		}
+
+		if (group_field & INSGROUP_VELU) {
+			compositeData->velocityUncertaintyEstimated = VnUartPacket_extractFloat(packet);
+		}
+
+
+		attitude.timestamp = hrt_absolute_time();
+		_attitude_pub.publish(attitude);
+
+		local_position.timestamp = hrt_absolute_time();
+		_local_position_pub.publish(local_position);
+
+		global_position.timestamp = hrt_absolute_time();
+		_global_position_pub.publish(global_position);
+
 	}
 
 	// Output Group 7 GNSS2 Group
 	if (groups & BINARYGROUPTYPE_GPS2) {
+
+		GpsGroup group_field = (GpsGroup)VnUartPacket_groupField(packet, curGroupFieldIndex++);
+
+		if (group_field & GPSGROUP_UTC) {
+			/* TODO: Need to store this in the current data. */
+			VnUartPacket_extractInt8(packet);
+			VnUartPacket_extractUint8(packet);
+			VnUartPacket_extractUint8(packet);
+			VnUartPacket_extractUint8(packet);
+			VnUartPacket_extractUint8(packet);
+			VnUartPacket_extractUint8(packet);
+			VnUartPacket_extractUint16(packet);
+		}
+
+		if (group_field & GPSGROUP_TOW) {
+			compositeData->gps2Tow = VnUartPacket_extractUint64(packet);
+		}
+
+		if (group_field & GPSGROUP_WEEK) {
+			compositeData->weekGps2 = VnUartPacket_extractUint16(packet);
+		}
+
+		if (group_field & GPSGROUP_NUMSATS) {
+			compositeData->numSatsGps2 = VnUartPacket_extractUint8(packet);
+		}
+
+		if (group_field & GPSGROUP_FIX) {
+			compositeData->fixGps2 = VnUartPacket_extractUint8(packet);
+		}
+
+		if (group_field & GPSGROUP_POSLLA) {
+			compositeData->positionGps2Lla = VnUartPacket_extractVec3d(packet);
+		}
+
+		if (group_field & GPSGROUP_POSECEF) {
+			compositeData->positionGps2Ecef = VnUartPacket_extractVec3d(packet);
+		}
+
+		if (group_field & GPSGROUP_VELNED) {
+			compositeData->velocityGps2Ned = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & GPSGROUP_VELECEF) {
+			compositeData->velocityGps2Ecef = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & GPSGROUP_POSU) {
+			compositeData->positionUncertaintyGps2Ned = VnUartPacket_extractVec3f(packet);
+		}
+
+		if (group_field & GPSGROUP_VELU) {
+			compositeData->velocityUncertaintyGps2 = VnUartPacket_extractFloat(packet);
+		}
+
+		if (group_field & GPSGROUP_TIMEU) {
+			compositeData->timeUncertaintyGps2 = VnUartPacket_extractUint32(packet);
+		}
+
+#ifdef EXTRA
+
+		if (gps2Group & GPSGROUP_SVSTAT) {
+			/* Current not doing anything with these values. */
+			size_t i;
+
+			for (i = 0; i < 8; i++) {
+				VnUartPacket_extractFloat(packet);
+			}
+		}
+
+#endif
 
 	}
 }
@@ -291,6 +565,7 @@ bool VectorNav::configure()
 		strFromHeadingMode(strConversions, (VnHeadingMode)vpeReg.headingMode);
 		PX4_DEBUG("Old Heading Mode: %s\n", strConversions);
 
+		vpeReg.enable = VNVPEENABLE_ENABLE;
 		vpeReg.headingMode = VNHEADINGMODE_ABSOLUTE;
 
 		if (VnSensor_writeVpeBasicControl(&_vs, vpeReg, true) == E_NONE) {
@@ -308,17 +583,6 @@ bool VectorNav::configure()
 		PX4_ERR("Error reading VPE basic control %d", error);
 	}
 
-
-
-	ImuGroup imu_group = (ImuGroup)(IMUGROUP_ACCEL | IMUGROUP_ANGULARRATE);
-	AttitudeGroup attitude_group = (AttitudeGroup)(ATTITUDEGROUP_VPESTATUS | ATTITUDEGROUP_YAWPITCHROLL);
-	InsGroup ins_group = (InsGroup)(INSGROUP_INSSTATUS | INSGROUP_POSLLA | INSGROUP_VELNED);
-	GpsGroup gps_group = (GpsGroup)(GPSGROUP_UTC | GPSGROUP_TOW | GPSGROUP_NUMSATS | GPSGROUP_FIX | GPSGROUP_POSLLA |
-					GPSGROUP_VELNED | GPSGROUP_TIMEU);
-
-
-	// baro, mag, move later
-
 	// 400 Hz
 	BinaryOutputRegister_initialize(
 		&_binary_output_400hz,
@@ -326,26 +590,24 @@ bool VectorNav::configure()
 		1, // divider
 		COMMONGROUP_NONE,
 		TIMEGROUP_NONE,
-		imu_group,
+		(ImuGroup)(IMUGROUP_ACCEL | IMUGROUP_ANGULARRATE),
 		GPSGROUP_NONE,
-		attitude_group,
-		ins_group,
+		(AttitudeGroup)(ATTITUDEGROUP_QUATERNION | ATTITUDEGROUP_LINEARACCELNED),
+		(InsGroup)(INSGROUP_INSSTATUS | INSGROUP_POSLLA | INSGROUP_VELNED | INSGROUP_POSU | INSGROUP_VELU),
 		GPSGROUP_NONE
 	);
 
 	// 50 Hz (baro, mag)
-	//  AttitudeGroup & InsGroup
-	// InsStatus INSGROUP_INSSTATUS is a bit field ***
 	BinaryOutputRegister_initialize(
 		&_binary_output_50hz,
 		ASYNCMODE_PORT1,
 		8, // divider
 		COMMONGROUP_NONE,
 		TIMEGROUP_NONE,
-		IMUGROUP_NONE,
+		(ImuGroup)(IMUGROUP_TEMP | IMUGROUP_PRES | IMUGROUP_MAG),
 		GPSGROUP_NONE,
-		attitude_group,
-		ins_group,
+		ATTITUDEGROUP_NONE,
+		INSGROUP_NONE,
 		GPSGROUP_NONE
 	);
 
@@ -358,7 +620,8 @@ bool VectorNav::configure()
 		COMMONGROUP_NONE,
 		TIMEGROUP_NONE,
 		IMUGROUP_TEMP,
-		gps_group,
+		(GpsGroup)(GPSGROUP_UTC | GPSGROUP_NUMSATS | GPSGROUP_FIX | GPSGROUP_POSLLA | GPSGROUP_VELNED | GPSGROUP_POSU |
+			   GPSGROUP_VELU | GPSGROUP_DOP),
 		ATTITUDEGROUP_NONE,
 		INSGROUP_NONE,
 		GPSGROUP_NONE
@@ -371,7 +634,6 @@ bool VectorNav::configure()
 		// strFromVnError((char*)buffer, error);
 		// PX4_ERR("Error writing binary output 1: %s", buffer);
 		PX4_ERR("Error writing binary output 1 %d", error);
-
 		return false;
 	}
 
