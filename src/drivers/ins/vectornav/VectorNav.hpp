@@ -97,30 +97,24 @@ private:
 
 	void Run() override;
 
-	static void asciiOrBinaryAsyncMessageReceived(void *userData, VnUartPacket *packet, size_t runningIndex);
+	static void binaryAsyncMessageReceived(void *userData, VnUartPacket *packet, size_t runningIndex);
 
 	void sensorCallback(VnUartPacket *packet);
 
-	char _linebuf[10] {};
 	char _port[20] {};
 
-	static constexpr int kCONVERSIONINTERVAL{9_ms};
-
-	int _fd{-1};
 	bool _initialized{false};
 
 	bool _connected{false};
 	bool _configured{false};
 
-	unsigned int _linebuf_index{0};
-
 	hrt_abstime _last_read{0};
 
 	VnSensor _vs{};
 
-	BinaryOutputRegister _binary_output_400hz{};
-	BinaryOutputRegister _binary_output_50hz{};
-	BinaryOutputRegister _binary_output_5hz{};
+	BinaryOutputRegister _binary_output_group_1{};
+	BinaryOutputRegister _binary_output_group_2{};
+	BinaryOutputRegister _binary_output_group_3{};
 
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 
