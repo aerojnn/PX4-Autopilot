@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2020 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2022 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,26 +31,49 @@
  *
  ****************************************************************************/
 
-#include <px4_arch/spi_hw_description.h>
-#include <drivers/drv_sensor.h>
-#include <nuttx/spi/spi.h>
+#include "AS5600L0.hpp"
 
-constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
-	initSPIBus(SPI::Bus::SPI1, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20649, SPI::CS{GPIO::PortC, GPIO::Pin2}, SPI::DRDY{GPIO::PortD, GPIO::Pin15}), // MPU_CS, MPU_DRDY
-		initSPIDevice(DRV_BARO_DEVTYPE_MS5611,  SPI::CS{GPIO::PortD, GPIO::Pin7}), // BARO_CS
-	}),
+#include <px4_platform_common/getopt.h>
+#include <px4_platform_common/module.h>
 
-	initSPIBus(SPI::Bus::SPI2, {
-		initSPIDevice(SPIDEV_FLASH(0), SPI::CS{GPIO::PortD, GPIO::Pin10}) // FRAM_CS
-	}),
+void AS5600L0::print_usage()
+{
+	PRINT_MODULE_USAGE_NAME("as5600l0", "driver");
+	PRINT_MODULE_USAGE_SUBCATEGORY("position_sensor");
+	PRINT_MODULE_USAGE_COMMAND("start");
+	PRINT_MODULE_USAGE_PARAMS_I2C_SPI_DRIVER(true, false);
+	PRINT_MODULE_USAGE_PARAMS_I2C_ADDRESS(0x40);
+	PRINT_MODULE_USAGE_PARAMS_I2C_KEEP_RUNNING_FLAG();
+	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
+}
 
-	initSPIBus(SPI::Bus::SPI4, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::PortE, GPIO::Pin4}),  // MPU_EXT_CS
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20602, SPI::CS{GPIO::PortC, GPIO::Pin13}), // GYRO_EXT_CS
-		initSPIDevice(DRV_BARO_DEVTYPE_MS5611, 	SPI::CS{GPIO::PortC, GPIO::Pin14}), // BARO_EXT_CS
-		initSPIDevice(DRV_IMU_DEVTYPE_ADIS16470, SPI::CS{GPIO::PortB, GPIO::Pin1}), // SPI::DRDY{GPIO::PortB, GPIO::Pin0}), // IMU_EXT_CS, IMU_EXT_DRDY
-	}),
-};
+extern "C" int as5600l0_main(int argc, char *argv[])
+{
+	using ThisDriver = AS5600L0;
+	BusCLIArguments cli{true, false};
+	cli.i2c_address = I2C_ADDRESS_DEFAULT_AS5600L;
+	cli.default_i2c_frequency = I2C_SPEED;
+	cli.support_keep_running = true;
 
-static constexpr bool unused = validateSPIConfig(px4_spi_buses);
+	const char *verb = cli.parseDefaultArguments(argc, argv);
+
+	if (!verb) {
+		ThisDriver::print_usage();
+		return -1;
+	}
+
+	BusInstanceIterator iterator(MODULE_NAME, cli, DRV_POSITION_DEVTYPE_AS5600L0);
+
+	if (!strcmp(verb, "start")) {
+		return ThisDriver::module_start(cli, iterator);
+
+	} else if (!strcmp(verb, "stop")) {
+		return ThisDriver::module_stop(iterator);
+
+	} else if (!strcmp(verb, "status")) {
+		return ThisDriver::module_status(iterator);
+	}
+
+	ThisDriver::print_usage();
+	return -1;
+}

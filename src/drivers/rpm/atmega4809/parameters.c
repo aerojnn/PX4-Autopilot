@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2020 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2022 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,26 +31,28 @@
  *
  ****************************************************************************/
 
-#include <px4_arch/spi_hw_description.h>
-#include <drivers/drv_sensor.h>
-#include <nuttx/spi/spi.h>
+/**
+ * RPM using ATmega4809 (external I2C)
+ *
+ * @reboot_required true
+ * @group Sensors
+ * @value 0 Disabled
+ * @value 1 Eneabled
+ */
+PARAM_DEFINE_INT32(SENS_EN_RPM, 1);
 
-constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
-	initSPIBus(SPI::Bus::SPI1, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20649, SPI::CS{GPIO::PortC, GPIO::Pin2}, SPI::DRDY{GPIO::PortD, GPIO::Pin15}), // MPU_CS, MPU_DRDY
-		initSPIDevice(DRV_BARO_DEVTYPE_MS5611,  SPI::CS{GPIO::PortD, GPIO::Pin7}), // BARO_CS
-	}),
+/**
+ * Number of Poles (or Magnets) for Pusher/Tractor motor
+ *
+ * @reboot_required true
+ * @group Sensors
+ */
+PARAM_DEFINE_INT32(MAIN_MOTOR_POLES, 14);
 
-	initSPIBus(SPI::Bus::SPI2, {
-		initSPIDevice(SPIDEV_FLASH(0), SPI::CS{GPIO::PortD, GPIO::Pin10}) // FRAM_CS
-	}),
-
-	initSPIBus(SPI::Bus::SPI4, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::PortE, GPIO::Pin4}),  // MPU_EXT_CS
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20602, SPI::CS{GPIO::PortC, GPIO::Pin13}), // GYRO_EXT_CS
-		initSPIDevice(DRV_BARO_DEVTYPE_MS5611, 	SPI::CS{GPIO::PortC, GPIO::Pin14}), // BARO_EXT_CS
-		initSPIDevice(DRV_IMU_DEVTYPE_ADIS16470, SPI::CS{GPIO::PortB, GPIO::Pin1}), // SPI::DRDY{GPIO::PortB, GPIO::Pin0}), // IMU_EXT_CS, IMU_EXT_DRDY
-	}),
-};
-
-static constexpr bool unused = validateSPIConfig(px4_spi_buses);
+/**
+ * Number of Poles (or Magnets)
+ *
+ * @reboot_required true
+ * @group Sensors
+ */
+PARAM_DEFINE_INT32(MOTOR_POLES, 12);

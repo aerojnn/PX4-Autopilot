@@ -1,0 +1,5 @@
+menuconfig DRIVERS_POSITION_SENSOR_AS5600L0
+	bool "as5600l0"
+	default n
+	---help---
+		Enable support for as5600l0

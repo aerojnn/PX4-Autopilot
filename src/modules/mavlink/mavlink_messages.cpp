@@ -58,6 +58,7 @@
 
 #include "streams/ACTUATOR_CONTROL_TARGET.hpp"
 #include "streams/ACTUATOR_OUTPUT_STATUS.hpp"
+#include "streams/AIRDATA_BOOM.hpp"
 #include "streams/ALTITUDE.hpp"
 #include "streams/ATTITUDE.hpp"
 #include "streams/ATTITUDE_QUATERNION.hpp"
@@ -92,6 +93,7 @@
 #include "streams/LOCAL_POSITION_NED.hpp"
 #include "streams/MAG_CAL_REPORT.hpp"
 #include "streams/MANUAL_CONTROL.hpp"
+#include "streams/MOTOR_ELECTRICAL_SPEED.hpp"
 #include "streams/MOUNT_ORIENTATION.hpp"
 #include "streams/NAV_CONTROLLER_OUTPUT.hpp"
 #include "streams/OBSTACLE_DISTANCE.hpp"
@@ -559,8 +561,14 @@ static const StreamListItem streams_list[] = {
 	create_stream_list_item<MavlinkStreamEfiStatus>(),
 #endif // EFI_STATUS_HPP
 #if defined(GPS_RTCM_DATA_HPP)
-	create_stream_list_item<MavlinkStreamGPSRTCMData>()
+	create_stream_list_item<MavlinkStreamGPSRTCMData>(),
 #endif // GPS_RTCM_DATA_HPP
+#if defined(AIRDATA_BOOM_HPP)
+	create_stream_list_item<MavlinkStreamAirdataBoom>(),
+#endif // AIRDATA_BOOM_HPP
+#if defined(MOTOR_ELECTRICAL_SPEED_HPP)
+	create_stream_list_item<MavlinkStreamMotorElectricalSpeed>()
+#endif // MOTOR_ELECTRICAL_SPEED_HPP
 };
 
 const char *get_stream_name(const uint16_t msg_id)

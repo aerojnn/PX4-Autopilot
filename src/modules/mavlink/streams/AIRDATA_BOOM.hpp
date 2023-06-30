@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2020 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2022 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,26 +31,53 @@
  *
  ****************************************************************************/
 
-#include <px4_arch/spi_hw_description.h>
-#include <drivers/drv_sensor.h>
-#include <nuttx/spi/spi.h>
+#ifndef AIRDATA_BOOM_HPP
+#define AIRDATA_BOOM_HPP
 
-constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
-	initSPIBus(SPI::Bus::SPI1, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20649, SPI::CS{GPIO::PortC, GPIO::Pin2}, SPI::DRDY{GPIO::PortD, GPIO::Pin15}), // MPU_CS, MPU_DRDY
-		initSPIDevice(DRV_BARO_DEVTYPE_MS5611,  SPI::CS{GPIO::PortD, GPIO::Pin7}), // BARO_CS
-	}),
+#include <uORB/topics/airdata_boom.h>
 
-	initSPIBus(SPI::Bus::SPI2, {
-		initSPIDevice(SPIDEV_FLASH(0), SPI::CS{GPIO::PortD, GPIO::Pin10}) // FRAM_CS
-	}),
+class MavlinkStreamAirdataBoom : public MavlinkStream
+{
+public:
+	static MavlinkStream *new_instance(Mavlink *mavlink) { return new MavlinkStreamAirdataBoom(mavlink); }
 
-	initSPIBus(SPI::Bus::SPI4, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::PortE, GPIO::Pin4}),  // MPU_EXT_CS
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20602, SPI::CS{GPIO::PortC, GPIO::Pin13}), // GYRO_EXT_CS
-		initSPIDevice(DRV_BARO_DEVTYPE_MS5611, 	SPI::CS{GPIO::PortC, GPIO::Pin14}), // BARO_EXT_CS
-		initSPIDevice(DRV_IMU_DEVTYPE_ADIS16470, SPI::CS{GPIO::PortB, GPIO::Pin1}), // SPI::DRDY{GPIO::PortB, GPIO::Pin0}), // IMU_EXT_CS, IMU_EXT_DRDY
-	}),
+	static constexpr const char *get_name_static() { return "AIRDATA_BOOM"; }
+	static constexpr uint16_t get_id_static() { return MAVLINK_MSG_ID_AIRDATA_BOOM; }
+
+	const char *get_name() const override { return get_name_static(); }
+	uint16_t get_id() override { return get_id_static(); }
+
+	unsigned get_size() override
+	{
+		return _airdata_boom_sub.advertised() ? MAVLINK_MSG_ID_AIRDATA_BOOM_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES : 0;
+	}
+
+private:
+	explicit MavlinkStreamAirdataBoom(Mavlink *mavlink) : MavlinkStream(mavlink) {}
+
+	uORB::Subscription _airdata_boom_sub{ORB_ID(airdata_boom)};
+
+	bool send() override
+	{
+		airdata_boom_s boom;
+
+		if (_airdata_boom_sub.update(&boom)) {
+			mavlink_airdata_boom_t msg{};
+
+			msg.indicated_airspeed = boom.indicated_airspeed_m_s;
+			msg.calibrated_airspeed = boom.calibrated_airspeed_m_s;
+			msg.true_airspeed = boom.true_airspeed_m_s;
+			msg.aoa = boom.aoa_deg;
+			msg.aos = boom.aos_deg;
+			msg.air_temperature = boom.air_temperature_celsius;
+
+			mavlink_msg_airdata_boom_send_struct(_mavlink->get_channel(), &msg);
+
+			return true;
+		}
+
+		return false;
+	}
 };
 
-static constexpr bool unused = validateSPIConfig(px4_spi_buses);
+#endif // AIRDATA_BOOM_HPP

@@ -1488,6 +1488,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 	switch (_mode) {
 	case MAVLINK_MODE_NORMAL:
 		configure_stream_local("ADSB_VEHICLE", unlimited_rate);
+		configure_stream_local("AIRDATA_BOOM", 2.0f);
 		configure_stream_local("ALTITUDE", 1.0f);
 		configure_stream_local("ATTITUDE", 15.0f);
 		configure_stream_local("ATTITUDE_TARGET", 2.0f);
@@ -1511,6 +1512,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("HOME_POSITION", 0.5f);
 		configure_stream_local("HYGROMETER_SENSOR", 0.1f);
 		configure_stream_local("LOCAL_POSITION_NED", 1.0f);
+		configure_stream_local("MOTOR_ELECTRICAL_SPEED", 2.0f);
 		configure_stream_local("NAV_CONTROLLER_OUTPUT", 1.0f);
 		configure_stream_local("OBSTACLE_DISTANCE", 1.0f);
 		configure_stream_local("ORBIT_EXECUTION_STATUS", 2.0f);
@@ -1553,6 +1555,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 
 		configure_stream_local("ACTUATOR_CONTROL_TARGET0", 10.0f);
 		configure_stream_local("ADSB_VEHICLE", unlimited_rate);
+		configure_stream_local("AIRDATA_BOOM", 10.0f);
 		configure_stream_local("ATTITUDE_QUATERNION", 50.0f);
 		configure_stream_local("ATTITUDE_TARGET", 10.0f);
 		configure_stream_local("BATTERY_STATUS", 0.5f);
@@ -1571,6 +1574,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("GPS_STATUS", 1.0f);
 		configure_stream_local("HOME_POSITION", 0.5f);
 		configure_stream_local("HYGROMETER_SENSOR", 1.0f);
+		configure_stream_local("MOTOR_ELECTRICAL_SPEED", 5.0f);
 		configure_stream_local("NAV_CONTROLLER_OUTPUT", 10.0f);
 		configure_stream_local("OPTICAL_FLOW_RAD", 10.0f);
 		configure_stream_local("ORBIT_EXECUTION_STATUS", 5.0f);
@@ -1696,6 +1700,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 
 		configure_stream_local("ACTUATOR_CONTROL_TARGET0", 30.0f);
 		configure_stream_local("ADSB_VEHICLE", unlimited_rate);
+		configure_stream_local("AIRDATA_BOOM", 30.0f);
 		configure_stream_local("ALTITUDE", 10.0f);
 		configure_stream_local("ATTITUDE", 50.0f);
 		configure_stream_local("ATTITUDE_QUATERNION", 50.0f);
@@ -1718,6 +1723,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("HYGROMETER_SENSOR", 1.0f);
 		configure_stream_local("MAG_CAL_REPORT", 1.0f);
 		configure_stream_local("MANUAL_CONTROL", 5.0f);
+		configure_stream_local("MOTOR_ELECTRICAL_SPEED", 10.0f);
 		configure_stream_local("NAV_CONTROLLER_OUTPUT", 10.0f);
 		configure_stream_local("OPTICAL_FLOW_RAD", 10.0f);
 		configure_stream_local("ORBIT_EXECUTION_STATUS", 5.0f);
@@ -1835,6 +1841,27 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 int
 Mavlink::task_main(int argc, char *argv[])
 {
+	// If stdin, stdout and/or stderr file descriptors (0, 1, 2)
+	// are not open when mavlink module starts (as might be the case for USB auto-start),
+	// use default /dev/null so that these numbers are not used by other other files.
+	if (fcntl(0, F_GETFD) == -1) {
+		int tmp = open("/dev/null", O_RDONLY);
+		dup2(tmp, 0);
+		close(tmp);
+	}
+
+	if (fcntl(1, F_GETFD) == -1) {
+		int tmp = open("/dev/null", O_WRONLY);
+		dup2(tmp, 1);
+		close(tmp);
+	}
+
+	if (fcntl(2, F_GETFD) == -1) {
+		int tmp = open("/dev/null", O_WRONLY);
+		dup2(tmp, 2);
+		close(tmp);
+	}
+	
 	int ch;
 	_baudrate = 57600;
 	_datarate = 0;

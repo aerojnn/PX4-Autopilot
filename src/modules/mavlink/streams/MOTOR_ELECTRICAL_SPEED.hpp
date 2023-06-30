@@ -1,6 +1,6 @@
 /****************************************************************************
  *
- *   Copyright (C) 2020 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2022 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -31,26 +31,51 @@
  *
  ****************************************************************************/
 
-#include <px4_arch/spi_hw_description.h>
-#include <drivers/drv_sensor.h>
-#include <nuttx/spi/spi.h>
+#ifndef MOTOR_ELECTRICAL_SPEED_HPP
+#define MOTOR_ELECTRICAL_SPEED_HPP
 
-constexpr px4_spi_bus_t px4_spi_buses[SPI_BUS_MAX_BUS_ITEMS] = {
-	initSPIBus(SPI::Bus::SPI1, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20649, SPI::CS{GPIO::PortC, GPIO::Pin2}, SPI::DRDY{GPIO::PortD, GPIO::Pin15}), // MPU_CS, MPU_DRDY
-		initSPIDevice(DRV_BARO_DEVTYPE_MS5611,  SPI::CS{GPIO::PortD, GPIO::Pin7}), // BARO_CS
-	}),
+#include <uORB/topics/rpm.h>
 
-	initSPIBus(SPI::Bus::SPI2, {
-		initSPIDevice(SPIDEV_FLASH(0), SPI::CS{GPIO::PortD, GPIO::Pin10}) // FRAM_CS
-	}),
+class MavlinkStreamMotorElectricalSpeed : public MavlinkStream
+{
+public:
+	static MavlinkStream *new_instance(Mavlink *mavlink) { return new MavlinkStreamMotorElectricalSpeed(mavlink); }
 
-	initSPIBus(SPI::Bus::SPI4, {
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20948, SPI::CS{GPIO::PortE, GPIO::Pin4}),  // MPU_EXT_CS
-		initSPIDevice(DRV_IMU_DEVTYPE_ICM20602, SPI::CS{GPIO::PortC, GPIO::Pin13}), // GYRO_EXT_CS
-		initSPIDevice(DRV_BARO_DEVTYPE_MS5611, 	SPI::CS{GPIO::PortC, GPIO::Pin14}), // BARO_EXT_CS
-		initSPIDevice(DRV_IMU_DEVTYPE_ADIS16470, SPI::CS{GPIO::PortB, GPIO::Pin1}), // SPI::DRDY{GPIO::PortB, GPIO::Pin0}), // IMU_EXT_CS, IMU_EXT_DRDY
-	}),
+	static constexpr const char *get_name_static() { return "MOTOR_ELECTRICAL_SPEED"; }
+	static constexpr uint16_t get_id_static() { return MAVLINK_MSG_ID_MOTOR_ELECTRICAL_SPEED; }
+
+	const char *get_name() const override { return get_name_static(); }
+	uint16_t get_id() override { return get_id_static(); }
+
+	unsigned get_size() override
+	{
+		return _rpm_sub.advertised() ? MAVLINK_MSG_ID_MOTOR_ELECTRICAL_SPEED_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES : 0;
+	}
+
+private:
+	explicit MavlinkStreamMotorElectricalSpeed(Mavlink *mavlink) : MavlinkStream(mavlink) {}
+
+	uORB::Subscription _rpm_sub{ORB_ID(rpm)};
+
+	bool send() override
+	{
+		rpm_s rpm;
+
+		if (_rpm_sub.update(&rpm)) {
+			mavlink_motor_electrical_speed_t msg{};
+			msg.front_right_motor = (int)rpm.electrical_speed_rpm[0];
+			msg.back_left_motor = (int)rpm.electrical_speed_rpm[1];
+			msg.front_left_motor = (int)rpm.electrical_speed_rpm[2];
+			msg.back_right_motor = (int)rpm.electrical_speed_rpm[3];
+			msg.fixed_wing_motor = (int)rpm.electrical_speed_rpm[4];
+
+			mavlink_msg_motor_electrical_speed_send_struct(_mavlink->get_channel(), &msg);
+
+			return true;
+		}
+
+		return false;
+	}
 };
 
-static constexpr bool unused = validateSPIConfig(px4_spi_buses);
+#endif // MOTOR_ELECTRICAL_SPEED_HPP

@@ -1,0 +1,12 @@
+menuconfig MODULES_AIRDATA_BOOM
+	bool "airdata_boom"
+	default n
+	---help---
+		Enable support for airdata_boom
+
+menuconfig USER_AIRDATA_BOOM
+	bool "airdata_boom running as userspace module"
+	default y
+	depends on BOARD_PROTECTED && MODULES_AIRDATA_BOOM
+	---help---
+		Put airdata_boom in userspace memory

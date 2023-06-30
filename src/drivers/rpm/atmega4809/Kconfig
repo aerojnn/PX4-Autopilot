@@ -1,0 +1,5 @@
+menuconfig DRIVERS_RPM_ATMEGA4809
+	bool "atmega4809"
+	default n
+	---help---
+		Enable support for atmega4809

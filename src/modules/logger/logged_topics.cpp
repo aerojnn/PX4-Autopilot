@@ -331,6 +331,8 @@ void LoggedTopics::add_system_identification_topics()
 	add_topic("vehicle_angular_acceleration");
 	add_topic("vehicle_angular_acceleration_setpoint");
 	add_topic("vehicle_torque_setpoint");
+	add_topic("airdata_boom");
+	add_topic("rpm");
 }
 
 void LoggedTopics::add_mavlink_tunnel()

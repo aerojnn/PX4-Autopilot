@@ -1,7 +1,9 @@
-menuconfig DRIVERS_RPM
-	bool "rpm"
-	default n
-	---help---
-		Enable support for rpm
-
-rsource "*/Kconfig"
+menu "RPM"
+    menuconfig COMMON_RPM
+        bool "Common RPM's"
+        default n
+        select DRIVERS_RPM_ATMEGA4809
+        ---help---
+            Enable default set of rpm drivers
+    rsource "*/Kconfig"
+endmenu
