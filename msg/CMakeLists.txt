@@ -47,6 +47,7 @@ set(msg_files
 	actuator_servos_trim.msg
 	actuator_test.msg
 	adc_report.msg
+	airdata_boom.msg
 	airspeed.msg
 	airspeed_validated.msg
 	airspeed_wind.msg
@@ -96,6 +97,7 @@ set(msg_files
 	hover_thrust_estimate.msg
 	internal_combustion_engine_status.msg
 	input_rc.msg
+	instrument.msg
 	iridiumsbd_status.msg
 	irlock_report.msg
 	landing_gear.msg
@@ -151,6 +153,7 @@ set(msg_files
 	sensor_gyro_fifo.msg
 	sensor_hygrometer.msg
 	sensor_mag.msg
+	sensor_position.msg
 	sensor_preflight_mag.msg
 	sensor_selection.msg
 	sensors_status_imu.msg

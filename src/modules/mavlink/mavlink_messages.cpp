@@ -58,6 +58,7 @@
 
 #include "streams/ACTUATOR_CONTROL_TARGET.hpp"
 #include "streams/ACTUATOR_OUTPUT_STATUS.hpp"
+#include "streams/AIRDATA_BOOM.hpp"
 #include "streams/ALTITUDE.hpp"
 #include "streams/ATTITUDE.hpp"
 #include "streams/ATTITUDE_QUATERNION.hpp"
@@ -559,8 +560,11 @@ static const StreamListItem streams_list[] = {
 	create_stream_list_item<MavlinkStreamEfiStatus>(),
 #endif // EFI_STATUS_HPP
 #if defined(GPS_RTCM_DATA_HPP)
-	create_stream_list_item<MavlinkStreamGPSRTCMData>()
+	create_stream_list_item<MavlinkStreamGPSRTCMData>(),
 #endif // GPS_RTCM_DATA_HPP
+#if defined(AIRDATA_BOOM_HPP)
+	create_stream_list_item<MavlinkStreamAirdataBoom>()
+#endif // AIRDATA_BOOM_HPP
 };
 
 const char *get_stream_name(const uint16_t msg_id)

@@ -1,0 +1,10 @@
+menu "Position sensors"
+    menuconfig COMMON_POSITION_SENSOR
+        bool "Common position sensor's"
+        default n
+        select DRIVERS_POSITION_SENSOR_AS5600L0
+        select DRIVERS_POSITION_SENSOR_AS5600L1
+        ---help---
+            Enable default set of position sensor drivers
+    rsource "*/Kconfig"
+endmenu

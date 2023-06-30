@@ -198,3 +198,21 @@ then
 	# start last (wait for possible icm20948 passthrough mode)
 	ak09916 -X -q start
 fi
+
+# AS5600L0 sensor, external I2C
+if param compare -s SENS_EN_AOA 1
+then
+	as5600l0 start -X
+fi
+
+# AS5600L1 sensor, external I2C
+if param compare -s SENS_EN_AOS 1
+then
+	as5600l1 start -X
+fi
+
+# Atmega2560 (Reference Data)
+if param compare -s SENS_EN_INTRU 1
+then
+	atmega2560 start -X
+fi
