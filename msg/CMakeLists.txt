@@ -80,6 +80,7 @@ set(msg_files
 	event.msg
 	follow_target.msg
 	failure_detector_status.msg
+	flight_test_input.msg
 	generator_status.msg
 	geofence_result.msg
 	gimbal_device_attitude_status.msg
@@ -155,6 +156,7 @@ set(msg_files
 	sensor_selection.msg
 	sensors_status_imu.msg
 	sensors_status.msg
+	system_identification_data.msg
 	system_power.msg
 	takeoff_status.msg
 	task_stack_info.msg
