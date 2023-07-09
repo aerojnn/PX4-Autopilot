@@ -92,19 +92,19 @@ void SystemIdentificationData::Run()
 	if (_flight_test_input_sub.update(&fti)) {
 
 		_airspeed_validated_sub.update(&airspeed);
-		//_air_data_boom_pub.update(&air_boom_data);
+		_airdata_boom_pub.update(&airboom_data);
 		_vehicle_attitude_sub.update(&attitude);
 		_vehicle_angular_velocity_sub.update(&angular_rate);
 		_vehicle_acceleration_sub.update(&acceleration);
 		_actuator_controls_sub.update(&control_input);
-		//_motor_electrical_speed_sub.update(&rpm);
+		_rpm_sub.update(&rpm);
 
 		// Airspeed
 		_airspeed	= airspeed.true_airspeed_m_s;
 
 		// Air data boom measurement
-		_aoa		= 0; //air_boom_data.aoa;
-		_aos		= 0; //air_boom_data.aos;
+		_aoa		= airboom_data.aoa_deg;
+		_aos		= airboom_data.aos_deg;
 
 		// Attitude rotation from the NED earth frame to the FRD body frame XYZ-axis in rad to deg
 		const Eulerf euler{Quatf{attitude.q}};
@@ -128,8 +128,8 @@ void SystemIdentificationData::Run()
 		_def_yaw	= control_input.control[2];
 		_def_throttle	= control_input.control[1];
 
-		// Additional control input for motor rpm
-		_def_rpm	= 0; //rpm.fixed_wing_motor;
+		// Additional control input for motor rpm (fixed-wing)
+		_def_rpm	= rpm.electrical_speed_rpm[4];
 
 		// publish data
 		publish();
