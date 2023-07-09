@@ -100,17 +100,17 @@ void SystemIdentificationData::Run()
 		//_motor_electrical_speed_sub.update(&rpm);
 
 		// Airspeed
-		_airspeed		= airspeed.true_airspeed_m_s;
+		_airspeed	= airspeed.true_airspeed_m_s;
 
 		// Air data boom measurement
-		_aoa 		= 0; //air_boom_data.aoa;
+		_aoa		= 0; //air_boom_data.aoa;
 		_aos		= 0; //air_boom_data.aos;
 
 		// Attitude rotation from the NED earth frame to the FRD body frame XYZ-axis in rad to deg
 		const Eulerf euler{Quatf{attitude.q}};
-		_roll_deg		= degrees(euler.phi());
-		_pitch_deg		= degrees(euler.theta());
-		_yaw_deg		= degrees(euler.psi());
+		_roll_deg	= degrees(euler.phi());
+		_pitch_deg	= degrees(euler.theta());
+		_yaw_deg	= degrees(euler.psi());
 
 		// Bias corrected angular velocity about the FRD body frame XYZ-axis in rad/s to deg/s
 		_roll_rate_deg	= degrees(angular_rate.xyz[0]);
@@ -123,13 +123,13 @@ void SystemIdentificationData::Run()
 		_az		= acceleration.xyz[2];
 
 		// Aerodynamic control surface deflection [-1, 1]
-		_def_roll		= control_input.control[0];
-		_def_pitch		= control_input.control[1];
-		_def_yaw		= control_input.control[2];
-		_def_throttle		= control_input.control[1];
+		_def_roll	= control_input.control[0];
+		_def_pitch	= control_input.control[1];
+		_def_yaw	= control_input.control[2];
+		_def_throttle	= control_input.control[1];
 
 		// Additional control input for motor rpm
-		_def_rpm		= 0; //rpm.fixed_wing_motor;
+		_def_rpm	= 0; //rpm.fixed_wing_motor;
 
 		// publish data
 		publish();
