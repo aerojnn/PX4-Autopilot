@@ -136,7 +136,7 @@ FixedwingAttitudeControl::vehicle_control_mode_poll()
 }
 
 void
-FixedwingAttitudeControl::vehicle_manual_poll(const float yaw_body)
+FixedwingAttitudeControl::vehicle_manual_poll(const float dt, const float yaw_body)
 {
 	const bool is_tailsitter_transition = _is_tailsitter && _vehicle_status.in_transition_mode;
 	const bool is_fixed_wing = _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING;
@@ -151,14 +151,20 @@ FixedwingAttitudeControl::vehicle_manual_poll(const float yaw_body)
 				if (_vcontrol_mode.flag_control_attitude_enabled) {
 					// STABILIZED mode generate the attitude setpoint from manual user inputs
 
-					_att_sp.roll_body = _manual_control_setpoint.y * radians(_param_fw_man_r_max.get());
+					_flight_test_input.fti_update(dt, ExcitePoint::ATTITUDE_CONTROL);
 
-					_att_sp.pitch_body = -_manual_control_setpoint.x * radians(_param_fw_man_p_max.get())
-							     + radians(_param_fw_psp_off.get());
+					_att_sp.roll_body = _flight_test_input.excite(ExciteIndex::ROLL,
+						_manual_control_setpoint.y * radians(_param_fw_man_r_max.get()));
+
+					_att_sp.pitch_body = _flight_test_input.excite(ExciteIndex::PITCH,
+						-_manual_control_setpoint.x * radians(_param_fw_man_p_max.get()) + radians(_param_fw_psp_off.get()));
+
 					_att_sp.pitch_body = constrain(_att_sp.pitch_body,
-								       -radians(_param_fw_man_p_max.get()), radians(_param_fw_man_p_max.get()));
+						-radians(_param_fw_man_p_max.get()), radians(_param_fw_man_p_max.get()));
 
-					_att_sp.yaw_body = yaw_body; // yaw is not controlled, so set setpoint to current yaw
+					_att_sp.yaw_body = _flight_test_input.excite(ExciteIndex::YAW,
+						yaw_body); // yaw is not controlled, so set setpoint to current yaw
+
 					_att_sp.thrust_body[0] = math::constrain(_manual_control_setpoint.z, 0.0f, 1.0f);
 
 					Quatf q(Eulerf(_att_sp.roll_body, _att_sp.pitch_body, _att_sp.yaw_body));
@@ -172,24 +178,39 @@ FixedwingAttitudeControl::vehicle_manual_poll(const float yaw_body)
 					   !_vcontrol_mode.flag_control_attitude_enabled) {
 
 					// RATE mode we need to generate the rate setpoint from manual user inputs
-					_rates_sp.timestamp = hrt_absolute_time();
-					_rates_sp.roll = _manual_control_setpoint.y * radians(_param_fw_acro_x_max.get());
-					_rates_sp.pitch = -_manual_control_setpoint.x * radians(_param_fw_acro_y_max.get());
-					_rates_sp.yaw = _manual_control_setpoint.r * radians(_param_fw_acro_z_max.get());
+
+					_flight_test_input.fti_update(dt, ExcitePoint::RATE_CONTROL);
+
+					_rates_sp.roll = _flight_test_input.excite(ExciteIndex::ROLL,
+						_manual_control_setpoint.y * radians(_param_fw_acro_x_max.get()));
+
+					_rates_sp.pitch = _flight_test_input.excite(ExciteIndex::PITCH,
+						-_manual_control_setpoint.x * radians(_param_fw_acro_y_max.get()));
+
+					_rates_sp.yaw = _flight_test_input.excite(ExciteIndex::YAW,
+						_manual_control_setpoint.r * radians(_param_fw_acro_z_max.get()));
+
 					_rates_sp.thrust_body[0] = math::constrain(_manual_control_setpoint.z, 0.0f, 1.0f);
+
+					_rates_sp.timestamp = hrt_absolute_time();
 
 					_rate_sp_pub.publish(_rates_sp);
 
 				} else {
 					/* manual/direct control */
-					_actuators.control[actuator_controls_s::INDEX_ROLL] =
-						_manual_control_setpoint.y * _param_fw_man_r_sc.get() + _param_trim_roll.get();
-					_actuators.control[actuator_controls_s::INDEX_PITCH] =
-						-_manual_control_setpoint.x * _param_fw_man_p_sc.get() + _param_trim_pitch.get();
-					_actuators.control[actuator_controls_s::INDEX_YAW] =
-						_manual_control_setpoint.r * _param_fw_man_y_sc.get() + _param_trim_yaw.get();
-					_actuators.control[actuator_controls_s::INDEX_THROTTLE] = math::constrain(_manual_control_setpoint.z, 0.0f,
-							1.0f);
+
+					_flight_test_input.fti_update(dt, ExcitePoint::ACTUATOR_CONTROL);
+
+					_actuators.control[actuator_controls_s::INDEX_ROLL] = _flight_test_input.excite(ExciteIndex::ROLL,
+						_manual_control_setpoint.y * _param_fw_man_r_sc.get() + _param_trim_roll.get());
+
+					_actuators.control[actuator_controls_s::INDEX_PITCH] = _flight_test_input.excite(ExciteIndex::PITCH,
+						-_manual_control_setpoint.x * _param_fw_man_p_sc.get() + _param_trim_pitch.get());
+
+					_actuators.control[actuator_controls_s::INDEX_YAW] = _flight_test_input.excite(ExciteIndex::YAW,
+						_manual_control_setpoint.r * _param_fw_man_y_sc.get() + _param_trim_yaw.get());
+
+					_actuators.control[actuator_controls_s::INDEX_THROTTLE] = math::constrain(_manual_control_setpoint.z, 0.0f, 1.0f);
 				}
 			}
 		}
@@ -360,7 +381,7 @@ void FixedwingAttitudeControl::Run()
 		_vehicle_status_sub.update(&_vehicle_status);
 
 		vehicle_control_mode_poll();
-		vehicle_manual_poll(euler_angles.psi());
+		vehicle_manual_poll(dt, euler_angles.psi());
 		vehicle_land_detected_poll();
 
 		// the position controller will not emit attitude setpoints in some modes

@@ -1,0 +1,12 @@
+menuconfig MODULES_SYSTEM_IDENTIFICATION_DATA
+	bool "system_identification_data"
+	default n
+	---help---
+		Enable support for system_identification_data
+
+menuconfig USER_SYSTEM_IDENTIFICATION_DATA
+	bool "system_identification_data running as userspace module"
+	default y
+	depends on BOARD_PROTECTED && MODULES_SYSTEM_IDENTIFICATION_DATA
+	---help---
+		Put system_identification_data in userspace memory
