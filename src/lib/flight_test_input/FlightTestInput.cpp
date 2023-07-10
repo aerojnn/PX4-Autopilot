@@ -98,7 +98,7 @@ FlightTestInput::fti_update(const float dt, const uint8_t excite_point)
 		 * Initialize sweep variables and store current autopilot mode
 		 */
 
-		mavlink_log_info(&_mavlink_log_pub, "#Flight test input injection starting");
+		mavlink_log_info(&_mavlink_log_pub, "#Flight test input excitation starting");
 
 		/**
 		 * Abort sweep if any system mode (main_state or nav_state) change
