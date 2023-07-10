@@ -219,8 +219,8 @@ FlightTestInput::compute_sweep(float dt)
 
 		_omega_min = 0.5f * _omega_bw;
 		_omega_max = 2.5f * _omega_180;
-		_t_max = 2 * M_PI_F / _omega_min;
-		_t_rec = 5 * _t_max;
+		_t_max = roundf(2 * M_PI_F / _omega_min);
+		_t_rec = roundf(5 * _t_max);
 
 		_param_omega_bw.set(_omega_bw);
 		_param_omega_180.set(_omega_180);
@@ -239,8 +239,8 @@ FlightTestInput::compute_sweep(float dt)
 	{
 		_omega_min = 0.5f * _param_omega_bw.get();
 		_omega_max = 2.5f * _param_omega_180.get();
-		_t_max = 2 * M_PI_F / _omega_min;
-		_t_rec = 5 * _t_max;
+		_t_max = roundf(2 * M_PI_F / _omega_min);
+		_t_rec = roundf(5 * _t_max);
 
 		_param_omega_min.set(_omega_min);
 		_param_omega_max.set(_omega_max);
