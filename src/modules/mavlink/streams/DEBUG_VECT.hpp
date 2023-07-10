@@ -35,6 +35,7 @@
 #define DEBUG_VECT_HPP
 
 #include <uORB/topics/debug_vect.h>
+#include <uORB/topics/actuator_controls.h>
 
 class MavlinkStreamDebugVect : public MavlinkStream
 {
@@ -56,19 +57,28 @@ private:
 	explicit MavlinkStreamDebugVect(Mavlink *mavlink) : MavlinkStream(mavlink) {}
 
 	uORB::Subscription _debug_sub{ORB_ID(debug_vect)};
+	uORB::Subscription _actuator_controls_sub{ORB_ID(actuator_controls_0)};
 
 	bool send() override
 	{
-		debug_vect_s debug;
+		//debug_vect_s debug;
+		actuator_controls_s	actuator;
 
-		if (_debug_sub.update(&debug)) {
+		// if (_debug_sub.update(&debug)) {
+		if (_actuator_controls_sub.update(&actuator)) {
 			mavlink_debug_vect_t msg{};
+			msg.time_usec = actuator.timestamp;
+			msg.x = actuator.control[0]; // roll
+			msg.y = actuator.control[1]; // pitch
+			msg.z = actuator.control[2]; // yaw
+			/*
 			msg.time_usec = debug.timestamp;
 			memcpy(msg.name, debug.name, sizeof(msg.name));
 			msg.name[sizeof(msg.name) - 1] = '\0'; // enforce null termination
 			msg.x = debug.x;
 			msg.y = debug.y;
 			msg.z = debug.z;
+			*/
 
 			mavlink_msg_debug_vect_send_struct(_mavlink->get_channel(), &msg);
 

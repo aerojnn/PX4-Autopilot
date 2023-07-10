@@ -104,7 +104,7 @@ private:
 	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};			/**< attitude (euler) angles*/
 	uORB::Subscription _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};	/**< angular rates */
 	uORB::Subscription _vehicle_acceleration_sub{ORB_ID(vehicle_acceleration)};		/**< angular rates */
-	uORB::Subscription _actuator_controls_sub{ORB_ID(actuator_controls)};			/**< control inputs */
+	uORB::Subscription _actuator_controls_sub{ORB_ID(actuator_controls_0)};			/**< control inputs */
 	uORB::Subscription _rpm_sub{ORB_ID(rpm)};						/**< motor rpm inputs */
 
 	// Publications
