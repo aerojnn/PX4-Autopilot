@@ -107,7 +107,6 @@ PARAM_DEFINE_INT32(FTI_EXCITE_INDEX, 0);
 /**
  * Test input frequency sweep
  *
- *
  * @unit Hz
  * @min 0.5
  * @max 2.0
@@ -118,8 +117,6 @@ PARAM_DEFINE_FLOAT(FTI_FS_FREQ, 1.0f);
 
 /**
  * Test input maximum time for long-period frequency sweep inputs
- *
- * The value is equal to  2*PI/ FTI_FS_OMEGA_MIN
  *
  * @unit s
  * @min 0
