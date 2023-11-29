@@ -108,7 +108,7 @@ PARAM_DEFINE_INT32(FTI_EXCITE_INDEX, 0);
  * Test input frequency sweep
  *
  * @unit Hz
- * @min 0.5
+ * @min 0.1
  * @max 2.0
  * @decimal 2
  * @group Flight Test Input
