@@ -229,7 +229,7 @@ PARAM_DEFINE_FLOAT(FTI_FS_T_TRIM_E, 3.0f);
  * @decimal 0
  * @group Flight Test Input
  */
-PARAM_DEFINE_FLOAT(FTI_FS_T_FADE_I, 3.0f);
+PARAM_DEFINE_FLOAT(FTI_FS_T_FADE_I, 0.0f);
 
 /**
  * Test input fade-out duration
@@ -240,7 +240,7 @@ PARAM_DEFINE_FLOAT(FTI_FS_T_FADE_I, 3.0f);
  * @decimal 0
  * @group Flight Test Input
  */
-PARAM_DEFINE_FLOAT(FTI_FS_T_FADE_O, 3.0f);
+PARAM_DEFINE_FLOAT(FTI_FS_T_FADE_O, 0.0f);
 
 /**
  * Test input doublet pulse length
