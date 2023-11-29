@@ -49,4 +49,4 @@
  * @reboot_required true
  * @group System Identification Data
  */
-PARAM_DEFINE_INT32(SYS_SAMPLE_RATE, 20);
+PARAM_DEFINE_INT32(SYS_SAMPLE_RATE, 80);

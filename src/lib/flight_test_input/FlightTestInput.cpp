@@ -98,7 +98,7 @@ FlightTestInput::fti_update(const float dt, const uint8_t excite_point)
 		 * Initialize sweep variables and store current autopilot mode
 		 */
 
-		mavlink_log_info(&_mavlink_log_pub, "#Flight test input injection starting");
+		mavlink_log_info(&_mavlink_log_pub, "#Flight test input excitation starting");
 
 		/**
 		 * Abort sweep if any system mode (main_state or nav_state) change
@@ -193,11 +193,13 @@ FlightTestInput::compute_sweep(float dt)
 	 *
 	 * Consists of:
 	 * 	- Trim duration before starting frequency sweep
-	 * 	- Fade-in of sweep
 	 * 	- Constant frequency of omega_min (One full long-period inputs)
 	 * 	- Frequency progression
-	 * 	- Fade-out of sweep
 	 * 	- Trim duration after ending
+	 *
+	 * 	- Additional
+	 * 		- Fade-in of sweep in Constant frequency
+	 * 		- Fade-out of sweep in Frequency progression
 	 *
 	 * Before conducting sweep input flight test, estimates of the omega_min and the omega_max:
 	 * 	System-identification flight tests to be conducted for the determination or validation of
@@ -219,8 +221,8 @@ FlightTestInput::compute_sweep(float dt)
 
 		_omega_min = 0.5f * _omega_bw;
 		_omega_max = 2.5f * _omega_180;
-		_t_max = 2 * M_PI_F / _omega_min;
-		_t_rec = 5 * _t_max;
+		_t_max = roundf(2 * M_PI_F / _omega_min);
+		_t_rec = roundf(5 * _t_max);
 
 		_param_omega_bw.set(_omega_bw);
 		_param_omega_180.set(_omega_180);
@@ -239,8 +241,8 @@ FlightTestInput::compute_sweep(float dt)
 	{
 		_omega_min = 0.5f * _param_omega_bw.get();
 		_omega_max = 2.5f * _param_omega_180.get();
-		_t_max = 2 * M_PI_F / _omega_min;
-		_t_rec = 5 * _t_max;
+		_t_max = roundf(2 * M_PI_F / _omega_min);
+		_t_rec = roundf(5 * _t_max);
 
 		_param_omega_min.set(_omega_min);
 		_param_omega_max.set(_omega_max);
@@ -255,51 +257,63 @@ FlightTestInput::compute_sweep(float dt)
 
 	/** frequency sweep input parameter */
 	_t_trim_start 	= _param_t_trim_start.get();
-	_t_fade_in 	= _param_t_fade_in.get();
-	_t_fade_out 	= _param_t_fade_out.get();
 	_t_trim_end 	= _param_t_trim_end.get();
 	_sweep_amp	= _param_sweep_amp.get();	/**< Typically 10% of the max. deflection limits, which is from -1 to 1. */
 
-	/** Excite input duration for frequency sweep input. */
-	_t_total 		= _t_trim_start + _t_fade_in + _t_max + _t_rec + _t_fade_out + _t_trim_end;
-	float t_run2t_trim_in 	= _t_trim_start;
-	float t_run2t_fade_in 	= _t_trim_start + _t_fade_in;
-	float t_run2t_max 	= _t_trim_start + _t_fade_in + _t_max;
-	float t_run2t_rec 	= _t_trim_start + _t_fade_in + _t_max + _t_rec ;
-	float t_run2t_fade_out 	= _t_trim_start + _t_fade_in + _t_max + _t_rec + _t_fade_out;
+	_t_fade_in 	= _param_t_fade_in.get();	/**< Limit fade in time in _t_max */
+	if (_t_fade_in > _t_max)
+	{
+		_t_fade_in = _t_max;
+	}
 
-	if (_time_running <= _t_total) {
+	_t_fade_out 	= _param_t_fade_out.get();	/**< Limit fade in time in _t_rec/2 */
+	if (_t_fade_out > _t_rec/4)
+	{
+		_t_fade_out = _t_rec/4;
+	}
+
+	/** Excite input duration for frequency sweep input. */
+	_t_total 		= _t_trim_start + _t_max + _t_rec + _t_trim_end;
+	float t_run2t_trim_in 	= _t_trim_start;
+	float t_run2t_max 	= _t_trim_start + _t_max;
+	float t_run2t_rec 	= _t_trim_start + _t_max + _t_rec ;
+
+	if (_time_running <= _t_total)
+	{
 		if (_time_running <= t_run2t_trim_in) 	/**< Trim duration before the starting sweep */
 		{
 			_excite_sweep_amp = 0.0f;
 			_freq_sweep = 0.0f;
 
-		} else if ((_time_running > t_run2t_trim_in) && (_time_running <= t_run2t_fade_in)) /**< Fade-in duration */
+		} else if ((_time_running > t_run2t_trim_in) && (_time_running <= t_run2t_max)) /**< Constant frequency duration for one long-period */
 		{
-			float t_segment_pct = (_time_running - t_run2t_trim_in) / _t_fade_in; /**< Time segment percentage in fade-in */
-			float omega = _omega_min;
-			_excite_sweep_amp = _sweep_amp * t_segment_pct;
-			_freq_sweep += omega * dt;
+			if (_time_running <=  (t_run2t_trim_in +  _t_fade_in))
+			{
+				float t_segment_pct = (_time_running - t_run2t_trim_in) / _t_fade_in; /**< Time segment percentage in fade-in */
+				_excite_sweep_amp = _sweep_amp * t_segment_pct;
+			} else
+			{
+				_excite_sweep_amp = _sweep_amp;
+			}
 
-		} else if ((_time_running > t_run2t_fade_in) && (_time_running <= t_run2t_max)) /**< Constant frequency duration for one long-period */
-		{
 			float omega = _omega_min;
-			_excite_sweep_amp = _sweep_amp;
 			_freq_sweep += omega * dt;
 
 		} else if ((_time_running > t_run2t_max) && (_time_running <= t_run2t_rec)) /**< Frequency progression duration */
 		{
+			if (_time_running > (t_run2t_rec - _t_fade_out))
+			{
+				float t_segment_pct = (_time_running - t_run2t_rec + _t_fade_out) / _t_fade_out; /**< Time segment percentage in fade-out*/
+				_excite_sweep_amp = (-_sweep_amp) * t_segment_pct + _sweep_amp;
+			}
+			else
+			{
+				_excite_sweep_amp = _sweep_amp;
+			}
+
 			float t_segment_pct = (_time_running - t_run2t_max) / _t_rec; /**< Time segment percentage in frequency progression */
 			float k = c2 * (float)(exp(c1 * t_segment_pct) - 1);
 			float omega = _omega_min + (k * (_omega_max - _omega_min));
-			_excite_sweep_amp = _sweep_amp;
-			_freq_sweep += omega * dt;
-
-		} else if ((_time_running > t_run2t_rec) && (_time_running <= t_run2t_fade_out)) /**< Fade-out duration */
-		{
-			float t_segment_pct = (_time_running - t_run2t_rec) / _t_fade_out; /**< Time segment percentage in fade-out*/
-			float omega = _omega_max ;
-			_excite_sweep_amp = (-_sweep_amp) * t_segment_pct + _sweep_amp;
 			_freq_sweep += omega * dt;
 
 		} else 	/**< Trim duration after the ending sweep */
