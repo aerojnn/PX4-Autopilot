@@ -149,9 +149,7 @@ FlightTestInput::fti_update(const float dt, const uint8_t excite_point)
 	case TEST_INPUT_COMPLETE:
 
 		_param_enable.set(false);
-		_param_est_omega.set(false);
 		_param_enable.commit();
-		_param_est_omega.commit();
 
 		/**
 		 * Only return to off state once param is reset to 0
@@ -173,16 +171,9 @@ FlightTestInput::compute_sweep(float dt)
 	/**
 	 * Design Frequency Sweep
 	 *
-	 * param _omega_bw	[rad/s] Bandwidth frequency at phase of the attitude response is based on the -135deg phase
-	 * 			(corresponding to 45-deg phase margin) frequency, or the 6dB gain margin frequency,
-	 * 			whichever is less.
-	 * @param _omega_180	[rad/s] Frequency at phase of the attitude response is -180deg
+	 * @param _freq_hz	[Hz] Frequency sweep
 	 *
-	 * @param _omega_min	[rad/s] Minimum frequency sweep = 0.5*_omega_bw
-	 * @param _omega_max	[rad/s] Maximmum frequency sweep = 2.5*_omega_180
-	 *
-	 * @param _t_max	[s] Maximum time for long-period frequency sweep inputs. = 2*PI/_omega_min
-	 * @param _t_rec	[s] Frequency sweep progression record length or duration. >= (4 to 5)*t_max
+	 * @param _t_test	[hr] Maximum time for long-period frequency sweep inputs.
 	 *
 	 * @param _sweep_amp 	[pct] Frequency sweep amplitude, typically 10% of the maximum deflection limits.
 	 * 			The manual control setpoint range, which is from -1 to 1.
@@ -194,89 +185,21 @@ FlightTestInput::compute_sweep(float dt)
 	 * Consists of:
 	 * 	- Trim duration before starting frequency sweep
 	 * 	- Constant frequency of omega_min (One full long-period inputs)
-	 * 	- Frequency progression
 	 * 	- Trim duration after ending
-	 *
-	 * 	- Additional
-	 * 		- Fade-in of sweep in Constant frequency
-	 * 		- Fade-out of sweep in Frequency progression
-	 *
-	 * Before conducting sweep input flight test, estimates of the omega_min and the omega_max:
-	 * 	System-identification flight tests to be conducted for the determination or validation of
-	 * 	six-DOF simulation models intended for flight mechanics and piloted applications generally
-	 * 	emphasize a frequency range that includes lower frequencies (0.3-12 rad/s).
-	 * 	For flight-control design, the test frequencies typically cover the range of 1-20 rad/s,
-	 * 	in order to provide the needed high-accuracy data from near the intended broken-loop crossover
-	 * 	frequency ω_c (at which the magnitude is 0dB for determination of phase margin) to
-	 * 	the -180deg phase crossing (for determination of gain margin)
 	*/
 
-	/**
-	 * Initial, estimates of the bandwidth frequency on the -135deg phase and frequency on -180deg phase of the attitude response.
-	*/
-	if (_param_est_omega.get())
-	{
-		_omega_bw = 2.0f;
-		_omega_180 = 8.0f;
-
-		_omega_min = 0.5f * _omega_bw;
-		_omega_max = 2.5f * _omega_180;
-		_t_max = roundf(2 * M_PI_F / _omega_min);
-		_t_rec = roundf(5 * _t_max);
-
-		_param_omega_bw.set(_omega_bw);
-		_param_omega_180.set(_omega_180);
-		_param_omega_min.set(_omega_min);
-		_param_omega_max.set(_omega_max);
-		_param_t_max.set(_t_max);
-		_param_t_rec.set(_t_rec);
-
-		_param_omega_bw.commit();
-		_param_omega_180.commit();
-		_param_omega_min.commit();
-		_param_omega_max.commit();
-		_param_t_max.commit();
-		_param_t_rec.commit();
-	} else
-	{
-		_omega_min = 0.5f * _param_omega_bw.get();
-		_omega_max = 2.5f * _param_omega_180.get();
-		_t_max = roundf(2 * M_PI_F / _omega_min);
-		_t_rec = roundf(5 * _t_max);
-
-		_param_omega_min.set(_omega_min);
-		_param_omega_max.set(_omega_max);
-		_param_t_max.set(_t_max);
-		_param_t_rec.set(_t_rec);
-
-		_param_omega_min.commit();
-		_param_omega_max.commit();
-		_param_t_max.commit();
-		_param_t_rec.commit();
-	}
+	_freq_hz = _param_freq_hz.get();
+	_t_test = _param_t_test.get();
 
 	/** frequency sweep input parameter */
 	_t_trim_start 	= _param_t_trim_start.get();
 	_t_trim_end 	= _param_t_trim_end.get();
 	_sweep_amp	= _param_sweep_amp.get();	/**< Typically 10% of the max. deflection limits, which is from -1 to 1. */
 
-	_t_fade_in 	= _param_t_fade_in.get();	/**< Limit fade in time in _t_max */
-	if (_t_fade_in > _t_max)
-	{
-		_t_fade_in = _t_max;
-	}
-
-	_t_fade_out 	= _param_t_fade_out.get();	/**< Limit fade in time in _t_rec/2 */
-	if (_t_fade_out > _t_rec/4)
-	{
-		_t_fade_out = _t_rec/4;
-	}
-
 	/** Excite input duration for frequency sweep input. */
-	_t_total 		= _t_trim_start + _t_max + _t_rec + _t_trim_end;
+	_t_total 		= _t_trim_start + _t_test + _t_trim_end;
 	float t_run2t_trim_in 	= _t_trim_start;
-	float t_run2t_max 	= _t_trim_start + _t_max;
-	float t_run2t_rec 	= _t_trim_start + _t_max + _t_rec ;
+	float t_run2t_test 	= _t_trim_start + _t_test;
 
 	if (_time_running <= _t_total)
 	{
@@ -285,37 +208,12 @@ FlightTestInput::compute_sweep(float dt)
 			_excite_sweep_amp = 0.0f;
 			_freq_sweep = 0.0f;
 
-		} else if ((_time_running > t_run2t_trim_in) && (_time_running <= t_run2t_max)) /**< Constant frequency duration for one long-period */
+		} else if ((_time_running > t_run2t_trim_in) && (_time_running <= t_run2t_test)) /**< Constant frequency duration for one long-period */
 		{
-			if (_time_running <=  (t_run2t_trim_in +  _t_fade_in))
-			{
-				float t_segment_pct = (_time_running - t_run2t_trim_in) / _t_fade_in; /**< Time segment percentage in fade-in */
-				_excite_sweep_amp = _sweep_amp * t_segment_pct;
-			} else
-			{
-				_excite_sweep_amp = _sweep_amp;
-			}
+			_excite_sweep_amp = _sweep_amp;
 
-			float omega = _omega_min;
+			float omega = _freq_hz / float(2 * M_PI);
 			_freq_sweep += omega * dt;
-
-		} else if ((_time_running > t_run2t_max) && (_time_running <= t_run2t_rec)) /**< Frequency progression duration */
-		{
-			if (_time_running > (t_run2t_rec - _t_fade_out))
-			{
-				float t_segment_pct = (_time_running - t_run2t_rec + _t_fade_out) / _t_fade_out; /**< Time segment percentage in fade-out*/
-				_excite_sweep_amp = (-_sweep_amp) * t_segment_pct + _sweep_amp;
-			}
-			else
-			{
-				_excite_sweep_amp = _sweep_amp;
-			}
-
-			float t_segment_pct = (_time_running - t_run2t_max) / _t_rec; /**< Time segment percentage in frequency progression */
-			float k = c2 * (float)(exp(c1 * t_segment_pct) - 1);
-			float omega = _omega_min + (k * (_omega_max - _omega_min));
-			_freq_sweep += omega * dt;
-
 		} else 	/**< Trim duration after the ending sweep */
 		{
 			_excite_sweep_amp = 0.0f;

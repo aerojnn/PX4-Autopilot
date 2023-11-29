@@ -105,62 +105,16 @@ PARAM_DEFINE_INT32(FTI_EXCITE_POINT, 0);
 PARAM_DEFINE_INT32(FTI_EXCITE_INDEX, 0);
 
 /**
- * Test input bandwidth frequency at phase of the attitude response is -135deg phase
+ * Test input frequency sweep
  *
- * If FTI_EST_OMEGA is disabled, this value can still be assigned to it.
- * Alternatively, this value is set to 0.
  *
- * @unit rad/s
- * @min 0.6
- * @max 4.0
- * @decimal 2
- * @group Flight Test Input
- */
-PARAM_DEFINE_FLOAT(FTI_FS_BW_FREQ, 0.6f);
-
-/**
- * Test input frequency at phase of the attitude response is -180deg
- *
- * If FTI_EST_OMEGA is disabled, this value can still be assigned to it.
- * Alternatively, this value is set to 0.
- *
- * @unit rad/s
- * @min 4.0
- * @max 10.0
- * @decimal 2
- * @group Flight Test Input
- */
-PARAM_DEFINE_FLOAT(FTI_FS_180_FREQ, 5.0f);
-
-/**
- * Test input minimum frequency sweep
- *
- * If FTI_EST_OMEGA is enabled, this value is equal to 1.0
- *
- * The value is equal to  0.5 * FTI_FS_BW_FREQ
- *
- * @unit rad/s
- * @min 0.3
+ * @unit Hz
+ * @min 0.5
  * @max 2.0
  * @decimal 2
  * @group Flight Test Input
-*/
-PARAM_DEFINE_FLOAT(FTI_FS_OMEGA_MIN, 0.3f);
-
-/**
- * Test input maximum frequency sweep
- *
- * If FTI_EST_OMEGA is enabled, this value is equal to 20.0
- *
- * The value is equal to  2.5 * FTI_FS_180_FREQ
- *
- * @unit rad/s
- * @min 10.0
- * @max 25.0
- * @decimal 2
- * @group Flight Test Input
-*/
-PARAM_DEFINE_FLOAT(FTI_FS_OMEGA_MAX, 20.0f);
+ */
+PARAM_DEFINE_FLOAT(FTI_FS_FREQ, 1.0f);
 
 /**
  * Test input maximum time for long-period frequency sweep inputs
@@ -168,25 +122,12 @@ PARAM_DEFINE_FLOAT(FTI_FS_OMEGA_MAX, 20.0f);
  * The value is equal to  2*PI/ FTI_FS_OMEGA_MIN
  *
  * @unit s
- * @min 3.0
- * @max 25.0
+ * @min 0
+ * @max 7200
  * @decimal 0
  * @group Flight Test Input
  */
-PARAM_DEFINE_FLOAT(FTI_FS_T_MAX, 3.0f);
-
-/**
- * Test input frequency sweep progression record length
- *
- * The value is equal to  5 * FTI_FS_T_MAX
- *
- * @unit s
- * @min 15.0
- * @max 125.0
- * @decimal 0
- * @group Flight Test Input
- */
-PARAM_DEFINE_FLOAT(FTI_FS_T_REC, 15.0f);
+PARAM_DEFINE_FLOAT(FTI_FS_T_TEST, 30.0f);
 
 /**
  * Test input frequency sweep amplitude
@@ -207,7 +148,7 @@ PARAM_DEFINE_FLOAT(FTI_FS_SWEEP_AMP, 0.1f);
  * @decimal 0
  * @group Flight Test Input
  */
-PARAM_DEFINE_FLOAT(FTI_FS_T_TRIM_S, 3.0f);
+PARAM_DEFINE_FLOAT(FTI_FS_T_TRIM_S, 2.0f);
 
 /**
  * Test input ending trim duration
@@ -218,29 +159,7 @@ PARAM_DEFINE_FLOAT(FTI_FS_T_TRIM_S, 3.0f);
  * @decimal 0
  * @group Flight Test Input
  */
-PARAM_DEFINE_FLOAT(FTI_FS_T_TRIM_E, 3.0f);
-
-/**
- * Test input fade-in duration
- *
- * @unit s
- * @min 0.0
- * @max 5.0
- * @decimal 0
- * @group Flight Test Input
- */
-PARAM_DEFINE_FLOAT(FTI_FS_T_FADE_I, 0.0f);
-
-/**
- * Test input fade-out duration
- *
- * @unit s
- * @min 0.0
- * @max 5.0
- * @decimal 0
- * @group Flight Test Input
- */
-PARAM_DEFINE_FLOAT(FTI_FS_T_FADE_O, 0.0f);
+PARAM_DEFINE_FLOAT(FTI_FS_T_TRIM_E, 2.0f);
 
 /**
  * Test input doublet pulse length

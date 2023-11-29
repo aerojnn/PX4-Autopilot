@@ -106,21 +106,12 @@ private:
 		TEST_INPUT_COMPLETE
 	} _state;
 
-	const float c1 = 4.0f;
-	const float c2 = 0.0187f;
-
 	float _time_running;		/**< Time */
 
-	float _omega_bw{0};		/**< Minimum frequency sweep */
-	float _omega_180{0};		/**< Maximmum frequency sweep */
-	float _omega_min{0};		/**< Minimum frequency sweep */
-	float _omega_max{0};		/**< Maximmum frequency sweep */
-	float _t_rec{0}; 		/**< Duration for frequency progression. */
-	float _t_max{0}; 		/**< Duration for long-period input. */
+	float _freq_hz{0};		/**< Minimum frequency sweep */
+	float _t_test{0}; 		/**< Duration for frequency progression. */
 	float _t_trim_start{0}; 	/**< Duration for trim condition before the starting frequency input. */
 	float _t_trim_end{0}; 		/**< Duration for trim condition after the ending frequency input. */
-	float _t_fade_in{0}; 		/**< Duration for fade-in at the initial starting frequency. */
-	float _t_fade_out{0}; 		/**< Duration for fade-out at the final ending frequency. */
 	float _sweep_amp{0};		/**< Frequency sweep amplitude */
 	float _freq_sweep{0};		/**< Frequency sweep */
 	float _excite_sweep_amp{0};	/**< Excitation sweep inputs amplitude */
@@ -161,21 +152,14 @@ private:
 
 	DEFINE_PARAMETERS(
 		(ParamBool<px4::params::FTI_ENABLE>) 		_param_enable,			/**< Main parameters */
-		(ParamBool<px4::params::FTI_EST_OMEGA>) 	_param_est_omega,		/**< Main parameters */
 		(ParamInt<px4::params::FTI_MODE>) 		_param_mode,			/**< Main parameters */
 		(ParamInt<px4::params::FTI_EXCITE_POINT>) 	_param_excite_point,		/**< Main parameters */
 		(ParamInt<px4::params::FTI_EXCITE_INDEX>) 	_param_excite_index,		/**< Main parameters */
-		(ParamFloat<px4::params::FTI_FS_BW_FREQ>) 	_param_omega_bw,   		/**< Frequency sweep parameters */
-		(ParamFloat<px4::params::FTI_FS_180_FREQ>) 	_param_omega_180,   		/**< Frequency sweep parameters */
-		(ParamFloat<px4::params::FTI_FS_OMEGA_MIN>) 	_param_omega_min,   		/**< Frequency sweep parameters */
-		(ParamFloat<px4::params::FTI_FS_OMEGA_MAX>) 	_param_omega_max,   		/**< Frequency sweep parameters */
-		(ParamFloat<px4::params::FTI_FS_T_MAX>) 	_param_t_max,   		/**< Frequency sweep parameters */
-		(ParamFloat<px4::params::FTI_FS_T_REC>) 	_param_t_rec,   		/**< Frequency sweep parameters */
+		(ParamFloat<px4::params::FTI_FS_FREQ>) 		_param_freq_hz,   		/**< Frequency sweep parameters */
+		(ParamFloat<px4::params::FTI_FS_T_TEST>) 	_param_t_test,   		/**< Frequency sweep parameters */
 		(ParamFloat<px4::params::FTI_FS_SWEEP_AMP>) 	_param_sweep_amp,   		/**< Frequency sweep parameters */
 		(ParamFloat<px4::params::FTI_FS_T_TRIM_S>) 	_param_t_trim_start,   		/**< Frequency sweep parameters */
 		(ParamFloat<px4::params::FTI_FS_T_TRIM_E>) 	_param_t_trim_end,   		/**< Frequency sweep parameters */
-		(ParamFloat<px4::params::FTI_FS_T_FADE_I>) 	_param_t_fade_in,   		/**< Frequency sweep parameters */
-		(ParamFloat<px4::params::FTI_FS_T_FADE_O>) 	_param_t_fade_out,   		/**< Frequency sweep parameters */
 		(ParamFloat<px4::params::FTI_PULSE_LEN>) 	_param_doublet_length,   	/**< Doublet parameters */
 		(ParamFloat<px4::params::FTI_PULSE_AMP>) 	_param_doublet_amp		/**< Doublet parameters */
 	)
