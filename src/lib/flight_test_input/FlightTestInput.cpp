@@ -125,8 +125,7 @@ FlightTestInput::fti_update(const float dt, const uint8_t excite_point)
 		    && (_nav_state == _vehicle_status.nav_state)
 		    && (_param_enable.get())
 		    && (_param_mode.get() == 0 || _param_mode.get() == 1)
-		    && (excite_point == _param_excite_point.get())
-		    && (_vcontrol_mode.flag_armed))
+		    && (excite_point == _param_excite_point.get()))
 		    {
 			if (_param_mode.get() == 0)
 			{
@@ -212,7 +211,7 @@ FlightTestInput::compute_sweep(float dt)
 		{
 			_excite_sweep_amp = _sweep_amp;
 
-			float omega = _freq_hz / float(2 * M_PI);
+			float omega = _freq_hz * float(2 * M_PI);
 			_freq_sweep += omega * dt;
 		} else 	/**< Trim duration after the ending sweep */
 		{

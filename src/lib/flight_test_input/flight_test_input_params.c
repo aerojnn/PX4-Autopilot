@@ -123,7 +123,7 @@ PARAM_DEFINE_FLOAT(FTI_FS_FREQ, 1.0f);
  *
  * @unit s
  * @min 0
- * @max 7200
+ * @max 14400
  * @decimal 0
  * @group Flight Test Input
  */
@@ -134,7 +134,7 @@ PARAM_DEFINE_FLOAT(FTI_FS_T_TEST, 30.0f);
  *
  * @unit norm
  * @min 0.1
- * @max 0.2
+ * @max 1.0
  * @group Flight Test Input
  */
 PARAM_DEFINE_FLOAT(FTI_FS_SWEEP_AMP, 0.1f);
