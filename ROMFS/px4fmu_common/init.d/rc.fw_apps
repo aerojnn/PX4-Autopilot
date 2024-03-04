@@ -34,3 +34,8 @@ fw_autotune_attitude_control start
 # Start Land Detector.
 #
 land_detector start fixedwing
+
+#
+# Start system identification data collection
+#
+system_identification_data start

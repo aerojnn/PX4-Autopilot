@@ -40,6 +40,7 @@
 #include <lib/mathlib/mathlib.h>
 #include <lib/parameters/param.h>
 #include <lib/perf/perf_counter.h>
+#include <lib/flight_test_input/FlightTestInput.hpp>
 #include <matrix/math.hpp>
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/defines.h>
@@ -229,6 +230,19 @@ private:
 	ECL_PitchController		_pitch_ctrl;
 	ECL_YawController		_yaw_ctrl;
 	ECL_WheelController		_wheel_ctrl;
+	FlightTestInput			_flight_test_input;
+
+	enum ExcitePoint {
+		ACTUATOR_CONTROL = 1,
+		ATTITUDE_CONTROL,
+		RATE_CONTROL
+	};
+
+	enum ExciteIndex {
+		ROLL = 1,
+		PITCH,
+		YAW
+	};
 
 	void control_flaps(const float dt);
 
@@ -240,7 +254,7 @@ private:
 	int		parameters_update();
 
 	void		vehicle_control_mode_poll();
-	void		vehicle_manual_poll(const float yaw_body);
+	void		vehicle_manual_poll(const float dt, const float yaw_body);
 	void		vehicle_attitude_setpoint_poll();
 	void		vehicle_rates_setpoint_poll();
 	void		vehicle_land_detected_poll();
