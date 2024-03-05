@@ -53,7 +53,7 @@ SystemIdentificationData::~SystemIdentificationData()
 
 bool SystemIdentificationData::init()
 {
-	int rate = _param_sys_iden_interval.get();
+	int rate = _param_interval.get();
 
 	// default to 250 Hz (4000 us interval)
 	if (rate <= 0) {
@@ -95,9 +95,9 @@ void SystemIdentificationData::Run()
 	_def_deg	= servo_deg.angle;
 
 	// Aerodynamic control surface deflection [-1, 1]
-	_def_roll	= control_input.control[0];
-	_def_pitch	= control_input.control[1];
-	_def_yaw	= control_input.control[2];
+	_def_roll	= control_input.control[0] * _param_max_servo_def.get();  // _param_max_roll_def
+	_def_pitch	= control_input.control[1] * _param_max_servo_def.get();  // _param_max_pitch_def
+	_def_yaw	= control_input.control[2] * _param_max_servo_def.get();  // _param_max_yaw_def
 
 	// publish data
 	publish();

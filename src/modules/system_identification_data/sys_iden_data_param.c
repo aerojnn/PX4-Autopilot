@@ -37,7 +37,7 @@
  * Parameters defined by the system identification data task
  *
  * @author Nanthawat Saetun <nanthawat.jn@gmail.com>
- */
+*/
 
 
 /**
@@ -49,4 +49,15 @@
  * @reboot_required true
  * @group System Identification Data
  */
-PARAM_DEFINE_INT32(SYS_SAMPLE_RATE, 80);
+PARAM_DEFINE_INT32(SYS_ID_SAMPLE_RATE, 80);
+
+/**
+ * Maximum control surface (servo) deflection
+ *
+ * @unit deg
+ * @min 0.0
+ * @max 90.0
+ * @decimal 1
+ * @group System Identification Data
+ */
+PARAM_DEFINE_FLOAT(SYS_ID_MAX_SERVO_DEF, 35.0f);

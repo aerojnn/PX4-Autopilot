@@ -108,7 +108,8 @@ private:
 
 	// Parameters
 	DEFINE_PARAMETERS(
-		(ParamInt<px4::params::SYS_SAMPLE_RATE>) 	_param_sys_iden_interval   /**< interval parameter */
+		(ParamInt<px4::params::SYS_ID_SAMPLE_RATE>) 		_param_interval,   /**< interval parameter */
+		(ParamFloat<px4::params::SYS_ID_MAX_SERVO_DEF>)    	_param_max_servo_def
 	)
 
 	void publish(); /**< publish data */
