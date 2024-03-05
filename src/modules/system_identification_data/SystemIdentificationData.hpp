@@ -55,20 +55,10 @@
 #include <uORB/Publication.hpp>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/system_identification_data.h>
-#include <uORB/topics/flight_test_input.h>
-#include <uORB/topics/airspeed_validated.h>
-//#include <uORB/topics/air_data_boom.h>
-#include <uORB/topics/vehicle_attitude.h>
-#include <uORB/topics/vehicle_angular_velocity.h>
-#include <uORB/topics/vehicle_acceleration.h>
+#include <uORB/topics/instrument.h>
 #include <uORB/topics/actuator_controls.h>
-//#include <uORB/topics/motor_electrical_speed.h>
 
-using matrix::Eulerf;
-using matrix::Quatf;
 using math::constrain;
-using math::degrees;
-
 using namespace time_literals;
 
 class SystemIdentificationData : public ModuleBase<SystemIdentificationData>, public ModuleParams,
@@ -97,45 +87,20 @@ private:
 	// Subscriptions
 	uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 
-	uORB::Subscription _flight_test_input_sub{ORB_ID(flight_test_input)};			/**< flight test input */
-
-	uORB::Subscription _airspeed_validated_sub{ORB_ID(airspeed_validated)};			/**< true airspeed */
-	//uORB::Subscription _air_data_boom_pub{ORB_ID(air_data_boom)};				/**< alpha and beta */
-	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};			/**< attitude (euler) angles*/
-	uORB::Subscription _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};	/**< angular rates */
-	uORB::Subscription _vehicle_acceleration_sub{ORB_ID(vehicle_acceleration)};		/**< angular rates */
-	uORB::Subscription _actuator_controls_sub{ORB_ID(actuator_controls)};			/**< control inputs */
-	//uORB::Subscription _motor_electrical_speed_sub{ORB_ID(motor_electrical_speed)};	/**< motor rpm inputs */
+	uORB::Subscription _instrument_sub{ORB_ID(instrument)};
+	uORB::Subscription _actuator_controls_sub{ORB_ID(actuator_controls_0)};			/**< control inputs */
 
 	// Publications
 	uORB::Publication<system_identification_data_s> _system_identification_data_pub{ORB_ID(system_identification_data)};
 
-	flight_test_input_s		fti;
-	airspeed_validated_s 		airspeed;
-	//air_data_boom_s 		air_boom_data;
-	vehicle_attitude_s		attitude;
-	vehicle_angular_velocity_s	angular_rate;
-	vehicle_acceleration_s		acceleration;
 	actuator_controls_s		control_input;
-	//motor_electrical_speed_s	rpm;
+	instrument_s 			servo_deg;
 
-	float _airspeed{0};
-	float _aoa{0};
-	float _aos{0};
-	float _roll_deg{0};
-	float _pitch_deg{0};
-	float _yaw_deg{0};
-	float _roll_rate_deg{0};
-	float _pitch_rate_deg{0};
-	float _yaw_rate_deg{0};
-	float _ax{0};
-	float _ay{0};
-	float _az{0};
+	float _def_deg{0};
+
 	float _def_roll{0};
 	float _def_pitch{0};
 	float _def_yaw{0};
-	float _def_throttle{0};
-	float _def_rpm{0};
 
 	// Performance (perf) counters
 	perf_counter_t	_loop_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};

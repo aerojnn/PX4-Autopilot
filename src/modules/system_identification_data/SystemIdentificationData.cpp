@@ -88,45 +88,16 @@ void SystemIdentificationData::Run()
 		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
 	}
 
-	_airspeed_validated_sub.update(&airspeed);
-	//_air_data_boom_pub.update(&air_boom_data);
-	_vehicle_attitude_sub.update(&attitude);
-	_vehicle_angular_velocity_sub.update(&angular_rate);
-	_vehicle_acceleration_sub.update(&acceleration);
+	_instrument_sub.update(&servo_deg);
 	_actuator_controls_sub.update(&control_input);
-	//_motor_electrical_speed_sub.update(&rpm);
 
-	// Airspeed
-	_airspeed	= airspeed.true_airspeed_m_s;
-
-	// Air data boom measurement
-	_aoa		= 0; //air_boom_data.aoa;
-	_aos		= 0; //air_boom_data.aos;
-
-	// Attitude rotation from the NED earth frame to the FRD body frame XYZ-axis in rad to deg
-	const Eulerf euler{Quatf{attitude.q}};
-	_roll_deg	= degrees(euler.phi());
-	_pitch_deg	= degrees(euler.theta());
-	_yaw_deg	= degrees(euler.psi());
-
-	// Bias corrected angular velocity about the FRD body frame XYZ-axis in rad/s to deg/s
-	_roll_rate_deg	= degrees(angular_rate.xyz[0]);
-	_pitch_rate_deg	= degrees(angular_rate.xyz[1]);
-	_yaw_rate_deg 	= degrees(angular_rate.xyz[2]);
-
-	// Bias corrected acceleration (including gravity) in the FRD body frame XYZ-axis in m/s^2
-	_ax		= acceleration.xyz[0];
-	_ay		= acceleration.xyz[1];
-	_az		= acceleration.xyz[2];
+	// Measure servo deflection (output) in deg from Arduino
+	_def_deg	= servo_deg.angle;
 
 	// Aerodynamic control surface deflection [-1, 1]
 	_def_roll	= control_input.control[0];
 	_def_pitch	= control_input.control[1];
 	_def_yaw	= control_input.control[2];
-	_def_throttle	= control_input.control[3];
-
-	// Additional control input for motor rpm
-	_def_rpm	= 0; //rpm.fixed_wing_motor;
 
 	// publish data
 	publish();
@@ -140,23 +111,10 @@ void SystemIdentificationData::publish()
 	system_identification_data_s 	sys_iden_data{};
 
 	sys_iden_data.timestamp = hrt_absolute_time();
-	sys_iden_data.airspeed	= _airspeed;
-	sys_iden_data.alpha	= _aoa;
-	sys_iden_data.beta	= _aos;
-	sys_iden_data.phi	= _roll_deg;
-	sys_iden_data.theta	= _pitch_deg;
-	sys_iden_data.psi	= _yaw_deg;
-	sys_iden_data.p		= _roll_rate_deg;
-	sys_iden_data.q		= _pitch_rate_deg;
-	sys_iden_data.r		= _yaw_rate_deg;
-	sys_iden_data.ax	= _ax;
-	sys_iden_data.ay	= _ay;
-	sys_iden_data.az	= _az;
+	sys_iden_data.servo	= _def_deg;
 	sys_iden_data.d_a	= _def_roll;
 	sys_iden_data.d_e	= _def_pitch;
 	sys_iden_data.d_r	= _def_yaw;
-	sys_iden_data.d_t	= _def_throttle;
-	sys_iden_data.d_rpm	= _def_rpm;
 
 	_system_identification_data_pub.publish(sys_iden_data);
 }

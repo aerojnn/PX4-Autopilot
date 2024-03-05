@@ -134,8 +134,8 @@ int ATMEGA2560::collect()
 
 	const hrt_abstime timestamp_sample = hrt_absolute_time();
 
-	// read 4 bytes from the sensor
-	uint8_t val[4];
+	// read 2 bytes from the sensor
+	uint8_t val[2];
 	int ret = read(REG_DATA, &val, sizeof(val));
 
 	if (ret != PX4_OK) {
@@ -144,15 +144,14 @@ int ATMEGA2560::collect()
 		return ret;
 	}
 
-	uint16_t _data[2];
-	_data[0] = val[0] << 8 | val[1];	// reference angle
-	_data[1] = val[2] << 8 | val[3];	// reference airspeed
+	uint16_t _data;
+	_data = val[0] << 8 | val[1];	// angle [0, 360]
 
-	float angle_degree = (float)_data[0] / 100;
-	float airspeed_mps = (float)_data[1] / 100;
 
-	// float nor_degree = fmod(angle_degree + 180, 360) - 180;
-	float nor_degree = angle_degree - 180;
+	float angle_degree = (float)_data / 100;
+
+	// https://stackoverflow.com/questions/11498169/dealing-with-angle-wrap-in-c-code/11498248#11498248
+	float nor_degree = fmod(angle_degree + 180, 360) - 180;
 
 	if (_param_pol_ref_angle.get() == 1){
 		nor_degree = nor_degree * -1.0f;
@@ -160,9 +159,7 @@ int ATMEGA2560::collect()
 
 	instrument_s msg{};
 	msg.timestamp_sample = timestamp_sample;
-	msg.ref_angle = angle_degree;
-	msg.nor_ref_angle = nor_degree;
-	msg.ref_airspeed = airspeed_mps;
+	msg.angle = nor_degree;
 	msg.error_count = perf_event_count(_comms_errors);
 	msg.timestamp = hrt_absolute_time();
 	_instrument_pub.publish(msg);

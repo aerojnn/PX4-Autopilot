@@ -326,12 +326,12 @@ void LoggedTopics::add_system_identification_topics()
 {
 	// for system id need to log imu and controls at full rate
 	add_topic("actuator_controls_0");
-	add_topic("actuator_controls_1");
-	add_topic("sensor_combined");
-	add_topic("vehicle_angular_acceleration");
-	add_topic("vehicle_angular_acceleration_setpoint");
-	add_topic("vehicle_torque_setpoint");
-	add_topic("airdata_boom");
+	// add_topic("actuator_controls_1");
+	// add_topic("sensor_combined");
+	// add_topic("vehicle_angular_acceleration");
+	// add_topic("vehicle_angular_acceleration_setpoint");
+	// add_topic("vehicle_torque_setpoint");
+	add_topic("system_identification_data");
 }
 
 void LoggedTopics::add_mavlink_tunnel()

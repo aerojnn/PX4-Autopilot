@@ -35,6 +35,7 @@
 #define AIRDATA_BOOM_HPP
 
 #include <uORB/topics/airdata_boom.h>
+#include <uORB/topics/system_identification_data.h>
 
 class MavlinkStreamAirdataBoom : public MavlinkStream
 {
@@ -56,22 +57,22 @@ private:
 	explicit MavlinkStreamAirdataBoom(Mavlink *mavlink) : MavlinkStream(mavlink) {}
 
 	uORB::Subscription _airdata_boom_sub{ORB_ID(airdata_boom)};
+	uORB::Subscription _system_identification_data_sub{ORB_ID(system_identification_data)};
 
 	bool send() override
 	{
-		airdata_boom_s boom;
+		// airdata_boom_s boom;
+		system_identification_data_s sys_iden_data;  //debug testing
 
-		if (_airdata_boom_sub.update(&boom)) {
+		if (_system_identification_data_sub.update(&sys_iden_data)) {
 			mavlink_airdata_boom_t msg{};
 
-			msg.indicated_airspeed = boom.indicated_airspeed_m_s;
-			msg.calibrated_airspeed = boom.calibrated_airspeed_m_s;
-			//msg.true_airspeed = boom.true_airspeed_m_s;
-			msg.true_airspeed = boom.ref_airspeed_m_s;
-			msg.aoa = boom.aoa_deg;
-			//msg.aos = boom.aos_deg;
-			msg.aos = boom.ref_angle_deg;
-			msg.air_temperature = boom.air_temperature_celsius;
+			msg.indicated_airspeed = 0.0f;
+			msg.calibrated_airspeed = 0.0f;
+			msg.true_airspeed = sys_iden_data.servo;
+			msg.aoa = sys_iden_data.d_a;
+			msg.aos = sys_iden_data.d_e;
+			msg.air_temperature = sys_iden_data.d_r;
 
 			mavlink_msg_airdata_boom_send_struct(_mavlink->get_channel(), &msg);
 
