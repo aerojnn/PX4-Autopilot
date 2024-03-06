@@ -1488,7 +1488,6 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 	switch (_mode) {
 	case MAVLINK_MODE_NORMAL:
 		configure_stream_local("ADSB_VEHICLE", unlimited_rate);
-		configure_stream_local("AIRDATA_BOOM", 2.0f);
 		configure_stream_local("ALTITUDE", 1.0f);
 		configure_stream_local("ATTITUDE", 15.0f);
 		configure_stream_local("ATTITUDE_TARGET", 2.0f);
@@ -1512,7 +1511,6 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("HOME_POSITION", 0.5f);
 		configure_stream_local("HYGROMETER_SENSOR", 0.1f);
 		configure_stream_local("LOCAL_POSITION_NED", 1.0f);
-		configure_stream_local("MOTOR_ELECTRICAL_SPEED", 2.0f);
 		configure_stream_local("NAV_CONTROLLER_OUTPUT", 1.0f);
 		configure_stream_local("OBSTACLE_DISTANCE", 1.0f);
 		configure_stream_local("ORBIT_EXECUTION_STATUS", 2.0f);
@@ -1522,6 +1520,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("RAW_RPM", 2.0f);
 		configure_stream_local("RC_CHANNELS", 5.0f);
 		configure_stream_local("SERVO_OUTPUT_RAW_0", 1.0f);
+		configure_stream_local("SYS_IDEN_DATA", 2.0f);
 		configure_stream_local("SYS_STATUS", 1.0f);
 		configure_stream_local("UTM_GLOBAL_POSITION", 0.5f);
 		configure_stream_local("VFR_HUD", 4.0f);
@@ -1555,7 +1554,6 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 
 		configure_stream_local("ACTUATOR_CONTROL_TARGET0", 10.0f);
 		configure_stream_local("ADSB_VEHICLE", unlimited_rate);
-		configure_stream_local("AIRDATA_BOOM", 10.0f);
 		configure_stream_local("ATTITUDE_QUATERNION", 50.0f);
 		configure_stream_local("ATTITUDE_TARGET", 10.0f);
 		configure_stream_local("BATTERY_STATUS", 0.5f);
@@ -1574,7 +1572,6 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("GPS_STATUS", 1.0f);
 		configure_stream_local("HOME_POSITION", 0.5f);
 		configure_stream_local("HYGROMETER_SENSOR", 1.0f);
-		configure_stream_local("MOTOR_ELECTRICAL_SPEED", 5.0f);
 		configure_stream_local("NAV_CONTROLLER_OUTPUT", 10.0f);
 		configure_stream_local("OPTICAL_FLOW_RAD", 10.0f);
 		configure_stream_local("ORBIT_EXECUTION_STATUS", 5.0f);
@@ -1584,6 +1581,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("RAW_RPM", 5.0f);
 		configure_stream_local("RC_CHANNELS", 20.0f);
 		configure_stream_local("SERVO_OUTPUT_RAW_0", 10.0f);
+		configure_stream_local("SYS_IDEN_DATA", 10.0f);
 		configure_stream_local("SYS_STATUS", 5.0f);
 		configure_stream_local("SYSTEM_TIME", 1.0f);
 		configure_stream_local("TRAJECTORY_REPRESENTATION_WAYPOINTS", 5.0f);
@@ -1700,7 +1698,6 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 
 		configure_stream_local("ACTUATOR_CONTROL_TARGET0", 30.0f);
 		configure_stream_local("ADSB_VEHICLE", unlimited_rate);
-		configure_stream_local("AIRDATA_BOOM", 30.0f);
 		configure_stream_local("ALTITUDE", 10.0f);
 		configure_stream_local("ATTITUDE", 50.0f);
 		configure_stream_local("ATTITUDE_QUATERNION", 50.0f);
@@ -1723,7 +1720,6 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("HYGROMETER_SENSOR", 1.0f);
 		configure_stream_local("MAG_CAL_REPORT", 1.0f);
 		configure_stream_local("MANUAL_CONTROL", 5.0f);
-		configure_stream_local("MOTOR_ELECTRICAL_SPEED", 10.0f);
 		configure_stream_local("NAV_CONTROLLER_OUTPUT", 10.0f);
 		configure_stream_local("OPTICAL_FLOW_RAD", 10.0f);
 		configure_stream_local("ORBIT_EXECUTION_STATUS", 5.0f);
@@ -1736,6 +1732,7 @@ Mavlink::configure_streams_to_default(const char *configure_single_stream)
 		configure_stream_local("SCALED_IMU3", 25.0f);
 		configure_stream_local("SERVO_OUTPUT_RAW_0", 20.0f);
 		configure_stream_local("SERVO_OUTPUT_RAW_1", 20.0f);
+		configure_stream_local("SYS_IDEN_DATA", 30.0f);
 		configure_stream_local("SYS_STATUS", 1.0f);
 		configure_stream_local("SYSTEM_TIME", 1.0f);
 		configure_stream_local("UTM_GLOBAL_POSITION", 1.0f);

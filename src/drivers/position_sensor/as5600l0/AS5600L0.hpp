@@ -71,8 +71,8 @@ static constexpr uint32_t 	I2C_SPEED = 100 * 1000; // 100 kHz I2C serial interfa
 // Status Bits
 #define AS5600L_MAGNET_DETECT 	0x20
 
-// Measurement rate is 100Hz
-#define AL5600L_MEAS_RATE 	100
+// Measurement rate is 200Hz
+#define AL5600L_MEAS_RATE 	200
 #define CONVERSION_INTERVAL	(1000000 / AL5600L_MEAS_RATE)	/* microseconds */
 
 class AS5600L0:  public device::I2C, public ModuleParams, public I2CSPIDriver<AS5600L0>

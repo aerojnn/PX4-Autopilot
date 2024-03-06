@@ -48,7 +48,7 @@ AirdataBoom::~AirdataBoom()
 bool AirdataBoom::init()
 {
 	// alternatively, Run on fixed interval
-	ScheduleOnInterval(SCHEDULE_INTERVAL);
+	// ScheduleOnInterval(SCHEDULE_INTERVAL);
 
 	return true;
 }
