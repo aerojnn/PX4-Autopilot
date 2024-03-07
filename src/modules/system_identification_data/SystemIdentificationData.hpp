@@ -143,7 +143,10 @@ private:
 
 	// Parameters
 	DEFINE_PARAMETERS(
-		(ParamInt<px4::params::SYS_SAMPLE_RATE>) 	_param_sys_iden_interval   /**< interval parameter */
+		(ParamInt<px4::params::SYSID_RATE>) 	_param_interval,   /**< interval parameter */
+		(ParamFloat<px4::params::SYSID_MAX_AIL_D>)    	_param_max_ail_def,
+		(ParamFloat<px4::params::SYSID_MAX_ELE_D>)    	_param_max_ele_def,
+		(ParamFloat<px4::params::SYSID_MAX_RUD_D>)    	_param_max_rud_def
 	)
 
 	void publish(); /**< publish data */

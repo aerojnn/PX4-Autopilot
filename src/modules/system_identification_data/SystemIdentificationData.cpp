@@ -53,7 +53,7 @@ SystemIdentificationData::~SystemIdentificationData()
 
 bool SystemIdentificationData::init()
 {
-	int rate = _param_sys_iden_interval.get();
+	int rate = _param_interval.get();
 
 	// default to 250 Hz (4000 us interval)
 	if (rate <= 0) {
@@ -88,52 +88,49 @@ void SystemIdentificationData::Run()
 		updateParams(); // update module parameters (in DEFINE_PARAMETERS)
 	}
 
-	// only run controller if fti changed
-	if (_flight_test_input_sub.update(&fti)) {
+	_airspeed_validated_sub.update(&airspeed);
+	_airdata_boom_pub.update(&airboom_data);
+	_vehicle_attitude_sub.update(&attitude);
+	_vehicle_angular_velocity_sub.update(&angular_rate);
+	_vehicle_acceleration_sub.update(&acceleration);
+	_actuator_controls_sub.update(&control_input);
+	//_motor_electrical_speed_sub.update(&rpm);
 
-		_airspeed_validated_sub.update(&airspeed);
-		_airdata_boom_pub.update(&airboom_data);
-		_vehicle_attitude_sub.update(&attitude);
-		_vehicle_angular_velocity_sub.update(&angular_rate);
-		_vehicle_acceleration_sub.update(&acceleration);
-		_actuator_controls_sub.update(&control_input);
-		_rpm_sub.update(&rpm);
+	// Airspeed
+	_airspeed	= airspeed.true_airspeed_m_s;
 
-		// Airspeed
-		_airspeed	= airspeed.true_airspeed_m_s;
+	// Air data boom measurement
+	_aoa		= airboom_data.aoa_deg;
+	_aos		= airboom_data.aos_deg;
 
-		// Air data boom measurement
-		_aoa		= airboom_data.aoa_deg;
-		_aos		= airboom_data.aos_deg;
+	// Attitude rotation from the NED earth frame to the FRD body frame XYZ-axis in rad to deg
+	const Eulerf euler{Quatf{attitude.q}};
+	_roll_deg	= degrees(euler.phi());
+	_pitch_deg	= degrees(euler.theta());
+	_yaw_deg	= degrees(euler.psi());
 
-		// Attitude rotation from the NED earth frame to the FRD body frame XYZ-axis in rad to deg
-		const Eulerf euler{Quatf{attitude.q}};
-		_roll_deg	= degrees(euler.phi());
-		_pitch_deg	= degrees(euler.theta());
-		_yaw_deg	= degrees(euler.psi());
+	// Bias corrected angular velocity about the FRD body frame XYZ-axis in rad/s to deg/s
+	_roll_rate_deg	= degrees(angular_rate.xyz[0]);
+	_pitch_rate_deg	= degrees(angular_rate.xyz[1]);
+	_yaw_rate_deg 	= degrees(angular_rate.xyz[2]);
 
-		// Bias corrected angular velocity about the FRD body frame XYZ-axis in rad/s to deg/s
-		_roll_rate_deg	= degrees(angular_rate.xyz[0]);
-		_pitch_rate_deg	= degrees(angular_rate.xyz[1]);
-		_yaw_rate_deg 	= degrees(angular_rate.xyz[2]);
+	// Bias corrected acceleration (including gravity) in the FRD body frame XYZ-axis in m/s^2
+	_ax		= acceleration.xyz[0];
+	_ay		= acceleration.xyz[1];
+	_az		= acceleration.xyz[2];
 
-		// Bias corrected acceleration (including gravity) in the FRD body frame XYZ-axis in m/s^2
-		_ax		= acceleration.xyz[0];
-		_ay		= acceleration.xyz[1];
-		_az		= acceleration.xyz[2];
+	// Aerodynamic control surface deflection [-1, 1]
+	_def_roll	= control_input.control[0] * _param_max_ail_def.get();
+	_def_pitch	= control_input.control[1] * _param_max_ele_def.get();;
+	_def_yaw	= control_input.control[2] * _param_max_rud_def.get();;
+	_def_throttle	= control_input.control[3];
 
-		// Aerodynamic control surface deflection [-1, 1]
-		_def_roll	= control_input.control[0];
-		_def_pitch	= control_input.control[1];
-		_def_yaw	= control_input.control[2];
-		_def_throttle	= control_input.control[1];
+	// Additional control input for motor rpm
+	_def_rpm	= 0; //rpm.fixed_wing_motor;
 
-		// Additional control input for motor rpm (fixed-wing)
-		_def_rpm	= rpm.electrical_speed_rpm[4];
+	// publish data
+	publish();
 
-		// publish data
-		publish();
-	}
 
 	perf_end(_loop_perf);
 }

@@ -31,68 +31,59 @@
  *
  ****************************************************************************/
 
-/**
- * @file ATMEGA4809.hpp
- *
- * @author Nanthawat Saetun <Nanthawat.jn@gmail.com>
- *
- * Driver for Motor Electrical Speed in RPM using Atmega4809 collects frequency data from the ESC's RPM (PWM) output signal.
- */
+#ifndef SYS_IDEN_DATA_HPP
+#define SYS_IDEN_DATA_HPP
 
-#pragma once
+#include <uORB/topics/system_identification_data.h>
 
-#include <px4_platform_common/module_params.h>
-#include <px4_platform_common/px4_config.h>
-#include <px4_platform_common/defines.h>
-#include <px4_platform_common/i2c_spi_buses.h>
-#include <drivers/drv_hrt.h>
-#include <lib/drivers/device/i2c.h>
-#include <lib/perf/perf_counter.h>
-#include <uORB/Publication.hpp>
-#include <uORB/topics/rpm.h>
-
-#define I2C_ADDRESS 0x50
-
-static constexpr uint32_t 	I2C_SPEED = 100 * 1000; // 100 kHz I2C serial interface
-
-// Output Register
-#define REG_FREQEUNCY 		0x01
-
-// Measurement rate is 200Hz
-#define ATMEGA4809_MEAS_RATE 	200
-#define CONVERSION_INTERVAL	(1000000 / ATMEGA4809_MEAS_RATE)	/* microseconds */
-
-class ATMEGA4809:  public device::I2C, public ModuleParams, public I2CSPIDriver<ATMEGA4809>
+class MavlinkStreamSysIdenData : public MavlinkStream
 {
 public:
-	ATMEGA4809(const I2CSPIDriverConfig &config);
-	~ATMEGA4809() override;
+	static MavlinkStream *new_instance(Mavlink *mavlink) { return new MavlinkStreamSysIdenData(mavlink); }
 
-	static void print_usage();
+	static constexpr const char *get_name_static() { return "SYS_IDEN_DATA"; }
+	static constexpr uint16_t get_id_static() { return MAVLINK_MSG_ID_SYS_IDEN_DATA; }
 
-	int init() override;
-	void print_status() override;
+	const char *get_name() const override { return get_name_static(); }
+	uint16_t get_id() override { return get_id_static(); }
 
-	void RunImpl();
+	unsigned get_size() override
+	{
+		return _system_identification_data_sub.advertised() ? MAVLINK_MSG_ID_SYS_IDEN_DATA_LEN + MAVLINK_NUM_NON_PAYLOAD_BYTES : 0;
+	}
 
 private:
-	int probe() override;
+	explicit MavlinkStreamSysIdenData(Mavlink *mavlink) : MavlinkStream(mavlink) {}
 
-	bool init_atmega4809();
+	uORB::Subscription _system_identification_data_sub{ORB_ID(system_identification_data)};
 
-	int collect();
+	bool send() override
+	{
+		system_identification_data_s data;
 
-	int read(unsigned address, void *data, unsigned count);
+		if (_system_identification_data_sub.update(&data)) {
+			mavlink_sys_iden_data_t msg{};
 
-	const bool _keep_retrying;
+			msg.p = data.p;
+			msg.q = data.q;
+			msg.r = data.r;
+			msg.ax = data.ax;
+			msg.ay = data.ay;
+			msg.az = data.az;
+			msg.v = data.airspeed;
+			msg.alpha = data.alpha;
+			msg.beta = data.beta;
+			msg.ail = data.d_a;
+			msg.ele = data.d_e;
+			msg.rud = data.d_r;
 
-	uORB::Publication<rpm_s> _rpm_pub{ORB_ID(rpm)};
+			mavlink_msg_sys_iden_data_send_struct(_mavlink->get_channel(), &msg);
 
-	perf_counter_t _sample_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": read")};
-	perf_counter_t _comms_errors{perf_alloc(PC_COUNT, MODULE_NAME": communication errors")};
+			return true;
+		}
 
-	DEFINE_PARAMETERS(
-		(ParamInt<px4::params::MAIN_MOTOR_POLES>) _param_main_poles,
-		(ParamInt<px4::params::MOTOR_POLES>) _param_poles
-	)
+		return false;
+	}
 };
+
+#endif // SYS_IDEN_DATA_HPP
