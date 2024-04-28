@@ -115,8 +115,8 @@ void SystemIdentificationData::Run()
 	Vector3f velocity_in_local_frame(velocity.vx, velocity.vy, velocity.vz);
 	Vector3f velocity_in_body_frame = quaternion.rotateVectorInverse(velocity_in_local_frame);
 	_velocity_x	= velocity_in_body_frame(0);
-	_velocity_y	= velocity_in_body_frame(0);
-	_velocity_z	= velocity_in_body_frame(0);
+	_velocity_y	= velocity_in_body_frame(1);
+	_velocity_z	= velocity_in_body_frame(2);
 
 	// Bias corrected angular velocity about the FRD body frame XYZ-axis in rad/s to deg/s
 	_roll_rate_deg	= degrees(angular_rate.xyz[0]);
