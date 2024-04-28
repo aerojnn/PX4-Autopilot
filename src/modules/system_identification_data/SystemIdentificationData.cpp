@@ -96,10 +96,10 @@ void SystemIdentificationData::Run()
 	_actuator_controls_sub.update(&control_input);
 	//_motor_electrical_speed_sub.update(&rpm);
 
-	// Airspeed
+	// Airspeed in m/s
 	_airspeed	= airspeed.true_airspeed_m_s;
 
-	// Air data boom measurement
+	// Air data boom measurement in deg
 	_aoa		= airboom_data.aoa_deg;
 	_aos		= airboom_data.aos_deg;
 
@@ -119,7 +119,7 @@ void SystemIdentificationData::Run()
 	_ay		= acceleration.xyz[1];
 	_az		= acceleration.xyz[2];
 
-	// Aerodynamic control surface deflection [-1, 1]
+	// Aerodynamic control surface deflection [-1, 1] to deg
 	_def_roll	= control_input.control[0] * _param_max_ail_def.get();
 	_def_pitch	= control_input.control[1] * _param_max_ele_def.get();;
 	_def_yaw	= control_input.control[2] * _param_max_rud_def.get();;

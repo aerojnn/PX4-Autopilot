@@ -51,7 +51,7 @@
 
 using namespace time_literals;
 
-static constexpr uint32_t SCHEDULE_INTERVAL{10_ms};	/**< The schedule interval in usec (1000 Hz) */
+static constexpr uint32_t SCHEDULE_INTERVAL{10_ms};	/**< The schedule interval in usec (100 Hz) */
 
 class AirdataBoom : public ModuleBase<AirdataBoom>, public ModuleParams, public px4::ScheduledWorkItem
 {
