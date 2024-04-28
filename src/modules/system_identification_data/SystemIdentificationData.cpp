@@ -91,6 +91,7 @@ void SystemIdentificationData::Run()
 	_airspeed_validated_sub.update(&airspeed);
 	_airdata_boom_pub.update(&airboom_data);
 	_vehicle_attitude_sub.update(&attitude);
+	_vehicle_local_position_sub.update(&velocity);
 	_vehicle_angular_velocity_sub.update(&angular_rate);
 	_vehicle_acceleration_sub.update(&acceleration);
 	_actuator_controls_sub.update(&control_input);
@@ -104,10 +105,18 @@ void SystemIdentificationData::Run()
 	_aos		= airboom_data.aos_deg;
 
 	// Attitude rotation from the NED earth frame to the FRD body frame XYZ-axis in rad to deg
-	const Eulerf euler{Quatf{attitude.q}};
+	Quatf quaternion(attitude.q);
+	Eulerf euler(quaternion);
 	_roll_deg	= degrees(euler.phi());
 	_pitch_deg	= degrees(euler.theta());
 	_yaw_deg	= degrees(euler.psi());
+
+	// Velocity from the NED earth frame to the FRD body frame XYZ-axis in m/s
+	Vector3f velocity_in_local_frame(velocity.vx, velocity.vy, velocity.vz);
+	Vector3f velocity_in_body_frame = quaternion.rotateVectorInverse(velocity_in_local_frame);
+	_velocity_x	= velocity_in_body_frame(0);
+	_velocity_y	= velocity_in_body_frame(0);
+	_velocity_z	= velocity_in_body_frame(0);
 
 	// Bias corrected angular velocity about the FRD body frame XYZ-axis in rad/s to deg/s
 	_roll_rate_deg	= degrees(angular_rate.xyz[0]);
@@ -146,6 +155,9 @@ void SystemIdentificationData::publish()
 	sys_iden_data.phi	= _roll_deg;
 	sys_iden_data.theta	= _pitch_deg;
 	sys_iden_data.psi	= _yaw_deg;
+	sys_iden_data.u		= _velocity_x;
+	sys_iden_data.v		= _velocity_y;
+	sys_iden_data.w		= _velocity_z;
 	sys_iden_data.p		= _roll_rate_deg;
 	sys_iden_data.q		= _pitch_rate_deg;
 	sys_iden_data.r		= _yaw_rate_deg;

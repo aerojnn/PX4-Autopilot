@@ -49,13 +49,13 @@
  * @reboot_required true
  * @group System Identification Data
  */
-PARAM_DEFINE_INT32(SYSID_RATE, 80);
+PARAM_DEFINE_INT32(SYSID_RATE, 100);
 
 /**
  * Maximum aileron deflection
  *
  * @unit deg
- * @min 0.0
+ * @min 1.0
  * @max 90.0
  * @decimal 1
  * @group System Identification Data
@@ -66,7 +66,7 @@ PARAM_DEFINE_FLOAT(SYSID_MAX_AIL_D, 1.0f);
  * Maximum elevator deflection
  *
  * @unit deg
- * @min 0.0
+ * @min 1.0
  * @max 90.0
  * @decimal 1
  * @group System Identification Data
@@ -77,7 +77,7 @@ PARAM_DEFINE_FLOAT(SYSID_MAX_ELE_D, 1.0f);
  * Maximum rudder deflection
  *
  * @unit deg
- * @min 0.0
+ * @min 1.0
  * @max 90.0
  * @decimal 1
  * @group System Identification Data

@@ -59,17 +59,15 @@
 #include <uORB/topics/airspeed_validated.h>
 #include <uORB/topics/airdata_boom.h>
 #include <uORB/topics/vehicle_attitude.h>
+#include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_angular_velocity.h>
 #include <uORB/topics/vehicle_acceleration.h>
 #include <uORB/topics/actuator_controls.h>
 #include <uORB/topics/rpm.h>
 
-using matrix::Eulerf;
-using matrix::Quatf;
-using math::constrain;
-using math::degrees;
-
 using namespace time_literals;
+using namespace matrix;
+using namespace math;
 
 class SystemIdentificationData : public ModuleBase<SystemIdentificationData>, public ModuleParams,
 	public px4::ScheduledWorkItem
@@ -101,9 +99,10 @@ private:
 
 	uORB::Subscription _airspeed_validated_sub{ORB_ID(airspeed_validated)};			/**< true airspeed */
 	uORB::Subscription _airdata_boom_pub{ORB_ID(airdata_boom)};				/**< alpha and beta */
-	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};			/**< attitude (euler) angles*/
+	uORB::Subscription _vehicle_attitude_sub{ORB_ID(vehicle_attitude)};			/**< attitude angles */
+	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};		/**< velocity */
 	uORB::Subscription _vehicle_angular_velocity_sub{ORB_ID(vehicle_angular_velocity)};	/**< angular rates */
-	uORB::Subscription _vehicle_acceleration_sub{ORB_ID(vehicle_acceleration)};		/**< angular rates */
+	uORB::Subscription _vehicle_acceleration_sub{ORB_ID(vehicle_acceleration)};		/**< acceleration */
 	uORB::Subscription _actuator_controls_sub{ORB_ID(actuator_controls_0)};			/**< control inputs */
 	uORB::Subscription _rpm_sub{ORB_ID(rpm)};						/**< motor rpm inputs */
 
@@ -114,28 +113,32 @@ private:
 	airspeed_validated_s 		airspeed;
 	airdata_boom_s			airboom_data;
 	vehicle_attitude_s		attitude;
+	vehicle_local_position_s	velocity;
 	vehicle_angular_velocity_s	angular_rate;
 	vehicle_acceleration_s		acceleration;
 	actuator_controls_s		control_input;
 	rpm_s				rpm;
 
-	float _airspeed{0};
-	float _aoa{0};
-	float _aos{0};
-	float _roll_deg{0};
-	float _pitch_deg{0};
-	float _yaw_deg{0};
-	float _roll_rate_deg{0};
-	float _pitch_rate_deg{0};
-	float _yaw_rate_deg{0};
-	float _ax{0};
-	float _ay{0};
-	float _az{0};
-	float _def_roll{0};
-	float _def_pitch{0};
-	float _def_yaw{0};
-	float _def_throttle{0};
-	float _def_rpm{0};
+	float _airspeed{0.f};
+	float _aoa{0.f};
+	float _aos{0.f};
+	float _roll_deg{0.f};
+	float _pitch_deg{0.f};
+	float _yaw_deg{0.f};
+	float _velocity_x{0.f};
+	float _velocity_y{0.f};
+	float _velocity_z{0.f};
+	float _roll_rate_deg{0.f};
+	float _pitch_rate_deg{0.f};
+	float _yaw_rate_deg{0.f};
+	float _ax{0.f};
+	float _ay{0.f};
+	float _az{0.f};
+	float _def_roll{0.f};
+	float _def_pitch{0.f};
+	float _def_yaw{0.f};
+	float _def_throttle{00.f};
+	float _def_rpm{0.f};
 
 	// Performance (perf) counters
 	perf_counter_t	_loop_perf{perf_alloc(PC_ELAPSED, MODULE_NAME": cycle")};
@@ -143,7 +146,7 @@ private:
 
 	// Parameters
 	DEFINE_PARAMETERS(
-		(ParamInt<px4::params::SYSID_RATE>) 	_param_interval,   /**< interval parameter */
+		(ParamInt<px4::params::SYSID_RATE>) 		_param_interval,   /**< interval parameter */
 		(ParamFloat<px4::params::SYSID_MAX_AIL_D>)    	_param_max_ail_def,
 		(ParamFloat<px4::params::SYSID_MAX_ELE_D>)    	_param_max_ele_def,
 		(ParamFloat<px4::params::SYSID_MAX_RUD_D>)    	_param_max_rud_def

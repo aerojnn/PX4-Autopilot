@@ -12,6 +12,10 @@ float32 p		# [deg/s] Angular rates around body axis x: roll rate (+ right wing d
 float32 q		# [deg/s] Angular rates around body axis y: pitch rate (+ nose up)
 float32 r		# [deg/s] Angular rates around body axis z: yaw rate (+ nose right)
 
+float32 u		# [m/s] Velocity along the body axis x: longitudinal
+float32 v		# [m/s] Velocity along the body axis y: lateral
+float32 w		# [m/s] Velocity along the body axis z: vertical
+
 float32 ax		# [m/s^2] Acceleration along the body axis x: longitudinal
 float32 ay		# [m/s^2] Acceleration along the body axis y: lateral
 float32 az		# [m/s^2] Acceleration along the body axis z: vertical
